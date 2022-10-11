@@ -1,0 +1,67 @@
+observed_phylogeny = readTrees("data/test.tre")[1]
+data <- readCharacterData("data/test.nex")
+
+speciation <- [2.0, 1.0]
+extinction <- [0.5, 0.1]
+eta <- 0.1
+
+
+#### construct a variable for the tree drawn from a birth death process
+timetree ~ dnCDBDP( rootAge           = observed_phylogeny.rootAge(),
+                    speciationRates   = speciation,
+                    extinctionRates   = extinction,
+                    Q                 = fnJC(2),
+                    pi                = simplex(1,1),
+                    delta             = eta,
+                    rho               = 1.0,
+                    condition         = "time")
+
+
+### clamp the model with the "observed" tree
+timetree.clamp( observed_phylogeny )
+timetree.clampCharData( data )
+
+num_taxa = observed_phylogeny.ntips()
+timetree.lnProbability() - num_taxa * ln(2) + ln(2) + ln(3) + ln(2)
+
+moves = VectorMoves()
+
+mni = 0
+
+monitors[++mni] = mnJointConditionalAncestralState(tree=timetree, cdbdp=timetree, type="Standard", printgen=1, withTips=true, withStartStates=false, filename="output/anc_states_BiSSE.log")
+monitors[++mni] = mnStochasticCharacterMap(cdbdp=timetree, printgen=1, filename="output/stochastic_character_mapping.log", include_simmap=true)
+monitors[++mni] = mnScreen(printgen=100)
+
+################
+# The Analysis #
+################
+
+### workspace model wrapper ###
+mymodel = model(timetree)
+
+### workspace mcmc
+mymcmc = mcmc(mymodel, monitors, moves, nruns=1, moveschedule="random")
+
+### run the MCMC
+mymcmc.run(generations=200000)
+
+##############################
+# Summarize ancestral states #
+##############################
+
+
+anc_states = readAncestralStateTrace("output/anc_states_BiSSE.log")
+anc_tree = ancestralStateTree(tree=observed_phylogeny, ancestral_state_trace_vector=anc_states, include_start_states=false, file="output/anc_states_BiSSE_results.tree", burnin=0, summary_statistic="MAP", site=1)
+
+x = readAncestralStateTrace("output/stochastic_character_mapping.log")
+
+summarizeCharacterMaps(x, observed_phylogeny, file="output/events.tsv", burnin=0)
+
+stoch_tree = characterMapTree(tree=observed_phylogeny,
+                          ancestral_state_trace_vector=x,
+                          character_file="output/marginal_character.tree",
+                          posterior_file="output/marginal_posterior.tree",
+                          burnin=0,
+                          num_time_slices=1000)
+
+q()
