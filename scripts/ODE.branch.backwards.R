@@ -1,3 +1,30 @@
+# library(deSolve)
+# 
+# backwards <- function(t, state, parameters) {
+#   E <- parameters[["E"]]
+#   D <- parameters[["D"]]
+#   with(as.list(c(state, parameters)), {
+#     for (j in 1:k){
+#       dE[j] <-  - (lambda[j]+mu[j]+eta)*E[j] + lambda[j] * E[j]^2
+#       dD[j] <-  - (lambda[j]+mu[j]+eta)*D[j] + 2*lambda[j]*D[j] * E[j]
+#       
+#       for (m in 1:k){
+#         if (j != m) {
+#           dE[j] <- dE[j] + eta/(k-1) * E[m]
+#           dD[j] <- dD[j] + eta/(k-1) * D[m]
+#         }
+#       }
+#     }
+#     list(c(dE, dD))
+#   })
+# }
+# 
+# parameters <- c(lambda = lambda, mu = mu, eta = eta)
+# state      <- c(E = c(0,0), D = c(1,0))
+# times      <- seq(0, 5, by = 0.01)
+# 
+# 
+# out <- ode(y = state, times = times, func = backwards, parms = parameters)
 
 
 branch.prob.backwards <- function(lambda, mu, eta, TIME, D.init, E.init, STEPS) {

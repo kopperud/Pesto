@@ -1,12 +1,12 @@
 library(diversitree)
 library(ape)
 
-anc.state.prob.bisse <- function(lambda, mu, eta) {
+anc.state.prob.bisse <- function(phy, datafile, lambda, mu, eta) {
 
   # parameters = λ0, λ1, µ0, µ1, q01, q10
   pars = c(lambda, mu, eta, eta)
-  phy = read.tree("data/test.tre")
-  tmp = read.csv("data/test.csv",header=TRUE, row.names=1)
+  #phy = read.nexus(treefile)
+  tmp = read.csv(datafile,header=TRUE, row.names=1)
   states <- tmp[,"state"]
   names(states) <- rownames(tmp)
 
@@ -20,6 +20,6 @@ anc.state.prob.bisse <- function(lambda, mu, eta) {
   # now infer marginal ancestral state reconstructions
   anc_states = asr.marginal(lik, pars)
 
-  return ( list(root=anc_states[,1], node=anc_states[,2]) )
-
+  anc_states <- t(anc_states)
+  return(anc_states)
 }

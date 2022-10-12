@@ -1,6 +1,11 @@
 
-stochastic.character.mapping <- function(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, METHOD) {
+#stochastic.character.mapping <- function(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, METHOD) {
+stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, METHOD) {
 
+    po <- postorder(phy)
+    parents <- phy$edge[po,1]
+    branch_lengths <- phy$edge.length[po]
+  
     k <- length(lambda)
     num_branches <- length(branch_lengths)
 
@@ -9,8 +14,15 @@ stochastic.character.mapping <- function(branch_lengths, parents, D_inits, lambd
     E_ends <- array(0,k*num_branches)
     dim(D_ends) <- c(num_branches,k)
     dim(E_ends) <- c(num_branches,k)
+    
+    sf <- matrix(0, nrow = length(phy$edge), ncol = 1)
 
-    for (i in 1:num_branches) {
+
+    #for (i in 1:num_branches) {
+    for (i in po){
+      parent <- phy$edge[i,1]
+      child <- phy$edge[i,2]
+      
 
         ## calculate along the branch
         bl <- branch_lengths[i]
@@ -20,11 +32,14 @@ stochastic.character.mapping <- function(branch_lengths, parents, D_inits, lambd
         ## * E
         ## if this is a terminal branch, then we use the initial values for D and E,
         ## otherwise we need to use the previous E and the product of D_i * D_j
-        if ( i %in% parents ) {
+        if ( child > length(phy$tip.label) ) {
             ## this is an internal branch
-            my_children <- which( parents == i )
+            my_children <- which(phy$edge[,1] == child)
             D_start <- lambda    ## remember lambda is a vector
-            for (j in my_children) D_start <- D_start * D_ends[j,]
+            #browser()
+            for (j in my_children){
+              D_start <- D_start * D_ends[j,]
+            } 
 
             ## initialize E
             E_start <- E_ends[my_children[1],]
@@ -34,27 +49,44 @@ stochastic.character.mapping <- function(branch_lengths, parents, D_inits, lambd
             E_start <- array(0,k)
         }
 
+        
         tmp_res <- branch.prob.backwards(lambda, mu, eta, bl, D_start, E_start, STEPS)
-        D_ends[i,] <- tmp_res$D
+        D_end <- tmp_res$D
+        # sf[i,] <- log(sum(D_end)) ## add the scaling factor
+        # D_end <- D_end / (sum(D_end))
+        D_ends[i,] <- D_end
+        
+        
         E_ends[i,] <- tmp_res$E
 
     }
 
+    
     ## compute the root probabilities
-    root_children <- which( !is.finite(parents) )
+    root_node <- length(phy$tip.label) + 1
+    root_children <- which(phy$edge[,1] == root_node)
     root_probs <- lambda
-    for (j in root_children) root_probs <- root_probs * D_ends[j,]
+    for (j in root_children){
+      root_probs <- root_probs * D_ends[j,]
+    } 
 
-cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
+    #cat("Likelihood:\t\t",log(mean(root_probs)) + sum(sf),"\n")
+    cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
     root_probs <- root_probs / sum(root_probs)
 
-
+    # n <- length(phy$tip.label); (n-1) * log(2) - sum(log(1:n)) - sum(log(1:(n-1)))
 
     state_likelihoods <- array(0,k)
 
-    observed_node <- 4
-    bl <- branch_lengths[observed_node]
-    E_start <- E_ends[observed_node,]
+    #############################################
+    ##
+    ##      Preorder pass, compute `F(t)`
+    ## 
+    #############################################
+    root_node <- length(phy$tip.label) + 1
+    left_root_edge <- which(phy$edge[,1] == root_node)[1]
+    
+    E_start <- E_ends[left_root_edge,]
 
     if ( METHOD == "A" ) {
         F_start <- D_ends[3,]
@@ -68,16 +100,64 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
         for (j in my_children) state_likelihoods <- state_likelihoods * D_ends[j,]
 
     } else if ( METHOD == "B" ) {
-        F_start <- D_ends[3,] * lambda
-        D_start <- array(0,k)
+        F_ends <- matrix(0, nrow = nrow(phy$edge), ncol = k)
+        
+        
+        
+        for (i in rev(po)){
+          parent <- phy$edge[i,1]
+          child <- phy$edge[i,2]
+          bl <- phy$edge.length[i]
+          
+          ## if root
+          if(parent == length(phy$tip.label) + 1){
+            root_children <- which(phy$edge[,1] == length(phy$tip.label) +1)
+            other_child <- root_children[root_children != i]
+            #F_start <- D_ends[root_children[1],] * D_ends[root_children[2],] * lambda
+            F_start <- D_ends[other_child,] * lambda
+          }else{
+            
+            parent_edge <- which(phy$edge[,2] == parent)
+            children <- which(phy$edge[,1] == parent)
+            other_child <- children[children != i]
+            
+            #browser()
+            
+            F_start <- F_ends[parent_edge,] * lambda * D_ends[other_child,]
+            #browser()
+          }
+          
+          D_start <- D_ends[i,] 
+          E_start <- E_ends[i,]
+        
+          tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
+          #browser()
+          F_ends[i,] <- tmp_res$Froot
+        }
+        
+        # state_likelihoods <- tmp_res$Froot
+        # my_children <- which( parents == observed_node )
+        # state_likelihoods <- lambda * state_likelihoods
+        # for (j in my_children){
+        #   state_likelihoods <- state_likelihoods * D_ends[j,]
+        # } 
 
-        tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
-        state_likelihoods <- tmp_res$Froot
-
-        my_children <- which( parents == observed_node )
-        state_likelihoods <- lambda * state_likelihoods
-        for (j in my_children) state_likelihoods <- state_likelihoods * D_ends[j,]
-
+        ASP <- matrix(0, nrow = length(phy$tip.label) - 1, ncol = k)
+        
+        for (node in (length(phy$tip.label) + 1): max(phy$edge)){
+          children <- which(phy$edge[,1] == node)
+          
+          if (node == length(phy$tip.label) + 1){
+            ASP[node - length(phy$tip.label), ] <- D_ends[children[1],] * D_ends[children[2],] * lambda
+          }else{
+            edge_idx <- which(phy$edge[,2] == node)
+            ASP[node - length(phy$tip.label), ] <- D_ends[children[1],] * D_ends[children[2],] * lambda * F_ends[edge_idx,]
+          }
+          ASP[node - length(phy$tip.label),] <- ASP[node - length(phy$tip.label),] / sum(ASP[node - length(phy$tip.label),])
+        }
+        
+        browser()
+        
     } else if ( METHOD == "C" ) {
         D_start <- array(0,k)
 
@@ -102,6 +182,9 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
             state_likelihoods <- state_likelihoods + tmp_state_likelihoods * D_ends[3,obs_state]
 
         }
+        
+      
+      
 
       x <- seq(0, bl, length.out = STEPS+1)
       df1 <- dplyr::tibble("time" = x,
@@ -119,8 +202,12 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
     }
 
     ## normalize
-    state_likelihoods <- state_likelihoods / sum(state_likelihoods)
+    # state_likelihoods <- state_likelihoods / sum(state_likelihoods)
+    
 
-    return ( list(root=root_probs ,node=state_likelihoods) )
+    res <- list(
+      "ASP" = ASP
+    )
+    # return ( list(root=root_probs ,node=state_likelihoods) )
 
 }
