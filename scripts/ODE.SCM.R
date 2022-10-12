@@ -61,7 +61,7 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
         D_start <- D_ends[4,]
 
         tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
-        state_likelihoods <- tmp_res$F
+        state_likelihoods <- tmp_res$Froot
 
         my_children <- which( parents == observed_node )
         state_likelihoods <- lambda * state_likelihoods
@@ -72,7 +72,7 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
         D_start <- array(0,k)
 
         tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
-        state_likelihoods <- tmp_res$F
+        state_likelihoods <- tmp_res$Froot
 
         my_children <- which( parents == observed_node )
         state_likelihoods <- lambda * state_likelihoods
@@ -89,8 +89,11 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
             F_start[obs_state] <- 1
             F_start <- F_start * lambda
 
+            print("F_start:")
+            print(F_start)
+
             tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
-            tmp_state_likelihoods <- tmp_res$F
+            tmp_state_likelihoods <- tmp_res$Froot
 
             my_children <- which( parents == observed_node )
             tmp_state_likelihoods <- lambda * tmp_state_likelihoods
@@ -99,6 +102,19 @@ cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
             state_likelihoods <- state_likelihoods + tmp_state_likelihoods * D_ends[3,obs_state]
 
         }
+
+      x <- seq(0, bl, length.out = STEPS+1)
+      df1 <- dplyr::tibble("time" = x,
+                   "F" = tmp_res$F[1,],
+                   "state" = "1")
+      df2 <- dplyr::tibble("time" = x,
+                   "F" = tmp_res$F[2,],
+                   "state" = "2")
+      df <- dplyr::bind_rows(df1, df2)
+      p <- ggplot2::ggplot(df, ggplot2::aes(x = time, y = F, linetype = state)) +
+                  ggplot2::geom_line()
+      ggplot2::ggsave("figures/tmp.pdf", p)
+
 
     }
 

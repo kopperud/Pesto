@@ -43,7 +43,12 @@ branch.prob.forwards <- function(lambda, mu, eta, TIME, F.init, D.init, E.init, 
     }
   }
 
-  rv = list(D=prob_observed_backward[,1], E=prob_extinction_forward[,1], F=prob_observed_forward[,1])
+  rv = list("D" = prob_observed_backward, 
+            "E" = prob_extinction_forward,
+            "F" = prob_observed_forward,
+            "Droot" = prob_observed_backward[,1], 
+            "Eroot" = prob_extinction_forward[,1],
+            "Froot" = prob_observed_forward[,1])
 
   return (rv)
 

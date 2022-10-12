@@ -76,38 +76,39 @@ cat("State probabilities at node:\t\t",mean(results_ace_rb[,"end_4"] == 0),mean(
 #cat("State probabilities at root:\t\t",num_root_0/(num_iterations + 1), 1-(num_root_0/(num_iterations + 1)),"\n")
 #cat("State probabilities at node:\t\t",num_node_0/(num_iterations + 1), 1-(num_node_0/(num_iterations + 1)),"\n")
 
-results_ace_bisse <- anc.state.prob.bisse(lambda, mu, eta)
 
+cat("\n")
 cat("Ancestral state algorithm (BiSSE)\n")
+results_ace_bisse <- anc.state.prob.bisse(lambda, mu, eta)
 cat("State probabilities at root:\t\t",results_ace_bisse$root,"\n")
 cat("State probabilities at node:\t\t",results_ace_bisse$node,"\n")
 
 
 
-results_ace <- ancestral.state.probs(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS)
 
+cat("\n")
 cat("Ancestral state algorithm\n")
+results_ace <- ancestral.state.probs(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS)
 cat("State probabilities at node:\t\t",results_ace,"\n")
 
 
 
 
-results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "A")
+#results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "A")
+#
+#cat("Stochastic character mapping (A)\n")
+#cat("State probabilities at root:\t\t",results_scm$root,"\n")
+#cat("State probabilities at node:\t\t",results_scm$node,"\n")
+#
 
-cat("Stochastic character mapping (A)\n")
-cat("State probabilities at root:\t\t",results_scm$root,"\n")
-cat("State probabilities at node:\t\t",results_scm$node,"\n")
+#results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "B")
+#
+#cat("Stochastic character mapping (B)\n")
+#cat("State probabilities at root:\t\t",results_scm$root,"\n")
+#cat("State probabilities at node:\t\t",results_scm$node,"\n")
 
-
-results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "B")
-
-cat("Stochastic character mapping (B)\n")
-cat("State probabilities at root:\t\t",results_scm$root,"\n")
-cat("State probabilities at node:\t\t",results_scm$node,"\n")
-
-
-results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "C")
-
+cat("\n")
 cat("Stochastic character mapping (C)\n")
+results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "C")
 cat("State probabilities at root:\t\t",results_scm$root,"\n")
 cat("State probabilities at node:\t\t",results_scm$node,"\n")
