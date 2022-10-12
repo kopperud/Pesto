@@ -3,6 +3,7 @@ source("scripts/ODE.branch.forwards.R")
 source("scripts/ODE.node.R")
 source("scripts/ODE.SCM.R")
 source("scripts/ODE.BiSSE.R")
+source("scripts/ODE.branch.backwards.rk4.R")
 
 
 STEPS <- 100000

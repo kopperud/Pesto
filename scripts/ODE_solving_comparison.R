@@ -10,7 +10,7 @@ source("scripts/ODE.branch.backwards.R")
 
 E.init <- c(0.0, 0.0)
 D.init <- c(1.0, 0.0)
-out_rk4 <- branch.prob.backwards.ode(lambda, mu, eta, 1.0, D.init, E.init)
+out_rk4 <- branch.prob.backwards.rk4(lambda, mu, eta, 1.0, D.init, E.init)
 
 out_eulers <- list()
 step_sizes <- c(100, 1000, 10000, 100000, 1000000)

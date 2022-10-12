@@ -11,10 +11,12 @@ anc.state.prob.bisse <- function(phy, datafile, lambda, mu, eta) {
   names(states) <- rownames(tmp)
 
   # calculate likelihood
-  lik = make.bisse(phy, states, strict=FALSE)
+  lik = make.bisse(phy, states, control = list("backend", "deSolve"), strict=FALSE)
   rate = pars[1]
   num_taxa = length(states)
-  lnl = lik(pars,root=ROOT.GIVEN, root.p=c(0.5,0.5), condition.surv=FALSE, intermediates=TRUE)
+  #lnl <- lik(pars,root=ROOT.GIVEN, root.p=c(0.5,0.5), condition.surv=TRUE, intermediates=TRUE)
+  lnl <- lik(pars,root=ROOT.FLAT, condition.surv=TRUE, intermediates=TRUE)
+  browser()
   cat("diversitree lnl =", lnl, "\n")
 
   # now infer marginal ancestral state reconstructions

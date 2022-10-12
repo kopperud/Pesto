@@ -3,11 +3,8 @@
 stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, METHOD) {
 
     po <- postorder(phy)
-    parents <- phy$edge[po,1]
-    branch_lengths <- phy$edge.length[po]
-  
     k <- length(lambda)
-    num_branches <- length(branch_lengths)
+    num_branches <- length(phy$edge.length)
 
 
     D_ends <- array(0,k*num_branches)
@@ -17,15 +14,13 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
     
     sf <- matrix(0, nrow = length(phy$edge), ncol = 1)
 
-
-    #for (i in 1:num_branches) {
     for (i in po){
       parent <- phy$edge[i,1]
       child <- phy$edge[i,2]
       
 
         ## calculate along the branch
-        bl <- branch_lengths[i]
+        bl <- phy$edge.length[i]
 
         ## get the initial values at the beginning of the branch for
         ## * D
@@ -35,8 +30,7 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
         if ( child > length(phy$tip.label) ) {
             ## this is an internal branch
             my_children <- which(phy$edge[,1] == child)
-            D_start <- lambda    ## remember lambda is a vector
-            #browser()
+            D_start <- lambda
             for (j in my_children){
               D_start <- D_start * D_ends[j,]
             } 
@@ -50,16 +44,20 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
         }
 
         
-        tmp_res <- branch.prob.backwards(lambda, mu, eta, bl, D_start, E_start, STEPS)
-        D_end <- tmp_res$D
-        # sf[i,] <- log(sum(D_end)) ## add the scaling factor
-        # D_end <- D_end / (sum(D_end))
-        D_ends[i,] <- D_end
-        
-        
-        E_ends[i,] <- tmp_res$E
+        if(FALSE){
+          tmp_res <- branch.prob.backwards(lambda, mu, eta, bl, D_start, E_start, STEPS)
+          D_end <- tmp_res$D
+          E_ends[i,] <- tmp_res$E
+        }else{
+          tmp_res <- branch.prob.backwards.rk4(lambda, mu, eta, bl, D_start, E_start)
+          D_end <- c(tail(tmp_res$D1, n = 1), tail(tmp_res$D2, n = 1))
 
-    }
+          E_ends[i,] <- c(tail(tmp_res$E1, n = 1), tail(tmp_res$E2, n = 1))
+        }
+        sf[i,] <- log(sum(D_end)) ## add the scaling factor
+        D_end <- D_end / (sum(D_end))
+        D_ends[i,] <- D_end
+      }
 
     
     ## compute the root probabilities
@@ -68,10 +66,15 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
     root_probs <- lambda
     for (j in root_children){
       root_probs <- root_probs * D_ends[j,]
-    } 
+    }
 
     #cat("Likelihood:\t\t",log(mean(root_probs)) + sum(sf),"\n")
-    cat("Likelihood:\t\t",log(mean(root_probs)),"\n")
+    # probability of at least two lineages not going extinct before the present
+    nonextinct <- (1 - E_ends[root_children[1],]) ^2
+    logL <- log(mean(root_probs / (nonextinct * lambda))) + sum(sf)
+    #logL <- log(mean(root_probs / nonextinct ))
+    cat("Likelihood:\t\t", logL,"\n")
+    browser()
     root_probs <- root_probs / sum(root_probs)
 
     # n <- length(phy$tip.label); (n-1) * log(2) - sum(log(1:n)) - sum(log(1:(n-1)))
@@ -156,7 +159,7 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
           ASP[node - length(phy$tip.label),] <- ASP[node - length(phy$tip.label),] / sum(ASP[node - length(phy$tip.label),])
         }
         
-        browser()
+        #browser()
         
     } else if ( METHOD == "C" ) {
         D_start <- array(0,k)
