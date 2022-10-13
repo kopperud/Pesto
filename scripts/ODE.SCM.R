@@ -12,7 +12,7 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
     dim(D_ends) <- c(num_branches,k)
     dim(E_ends) <- c(num_branches,k)
     
-    sf <- matrix(0, nrow = length(phy$edge), ncol = 1)
+    sf <- matrix(0, nrow = nrow(phy$edge), ncol = 1)
 
     for (i in po){
       parent <- phy$edge[i,1]
@@ -57,6 +57,8 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
         sf[i,] <- log(sum(D_end)) ## add the scaling factor
         D_end <- D_end / (sum(D_end))
         D_ends[i,] <- D_end
+        
+
       }
 
     
@@ -128,6 +130,7 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
         
           tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
           F_ends[i,] <- tmp_res$Froot
+          
         }
 
         ASP <- matrix(0, nrow = length(phy$tip.label) - 1, ncol = k)
@@ -143,6 +146,8 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
           }
           ASP[node - length(phy$tip.label),] <- ASP[node - length(phy$tip.label),] / sum(ASP[node - length(phy$tip.label),])
         }
+        
+        #browser()
         
         
     } else if ( METHOD == "C" ) {
