@@ -1,5 +1,3 @@
-
-
 branch.prob.forwards <- function(lambda, mu, eta, TIME, F.init, D.init, E.init, STEPS, METHOD) {
 
   k     <- length(lambda)

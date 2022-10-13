@@ -5,8 +5,10 @@ source("scripts/ODE.SCM.R")
 source("scripts/ODE.BiSSE.R")
 source("scripts/ODE.branch.backwards.rk4.R")
 
+#library(deSolve)
 
-STEPS <- 100000
+
+STEPS <- 10000
 
 lambda <- c(2,1.0)
 mu     <- c(0.5,0.1)
@@ -14,7 +16,7 @@ eta    <- 0.1
 k      <- length(lambda)
 
 
-if (TRUE){
+if (F){
   treefile <- "data/test.tre"  
   datafile <- "data/test.csv"
   phy <- read.tree(treefile)
@@ -24,9 +26,9 @@ if (TRUE){
   phy <- read.nexus(treefile)  
 }
  
- treefile <- "data/fourtaxon.tre"  
- datafile <- "data/fourtaxon.csv"
- phy <- read.tree(treefile)
+ # treefile <- "data/fourtaxon.tre"  
+ # datafile <- "data/fourtaxon.csv"
+ # phy <- read.tree(treefile)
 
 
 D_inits <- matrix(0, nrow = nrow(phy$edge), ncol = 2)
@@ -49,10 +51,10 @@ cat("\n")
 cat("\n")
 
 
-results_ace_rb <- read.table(file="output/anc_states_BiSSE.log",sep="\t",head=TRUE)
-cat("Ancestral state algorithm (RevBayes)\n")
-cat("State probabilities at root:\t\t",mean(results_ace_rb[,"end_5"] == 0),mean(results_ace_rb[,"end_5"] == 1),"\n")
-cat("State probabilities at node:\t\t",mean(results_ace_rb[,"end_4"] == 0),mean(results_ace_rb[,"end_4"] == 1),"\n")
+# results_ace_rb <- read.table(file="output/anc_states_BiSSE.log",sep="\t",head=TRUE)
+# cat("Ancestral state algorithm (RevBayes)\n")
+# cat("State probabilities at root:\t\t",mean(results_ace_rb[,"end_5"] == 0),mean(results_ace_rb[,"end_5"] == 1),"\n")
+# cat("State probabilities at node:\t\t",mean(results_ace_rb[,"end_4"] == 0),mean(results_ace_rb[,"end_4"] == 1),"\n")
 
 
 
@@ -82,14 +84,15 @@ print(results_ace_bisse)
 
 
 
-results_scm <- stochastic.character.mapping(phy, D_inits, lambda, mu, eta, STEPS, "B")
 
+cat("\n")
 cat("Stochastic character mapping (B)\n")
+results_scm <- stochastic.character.mapping(phy, D_inits, lambda, mu, eta, STEPS, "B")
 # cat("State probabilities at root:\t\t",results_scm$root,"\n")
 # cat("State probabilities at node:\t\t",results_scm$node,"\n")
 print(results_scm$ASP)
 
-q()
+stop(".")
 
 cat("\n")
 cat("Stochastic character mapping (C)\n")

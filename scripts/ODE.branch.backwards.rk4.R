@@ -17,6 +17,6 @@ branch.prob.backwards.rk4 <- function(lambda, mu, eta, TIME, D.init, E.init){
   times <- seq(0, TIME, by = 0.001)
   #times <- c(0, TIME)
   
-  out <- rk4(y = yini, times = times, func = backwards, parms = parameters) 
+  out <- deSolve::rk4(y = yini, times = times, func = backwards, parms = parameters) 
   return(as.data.frame(out))
 }

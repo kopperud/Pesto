@@ -72,9 +72,8 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
     # probability of at least two lineages not going extinct before the present
     nonextinct <- (1 - E_ends[root_children[1],]) ^2
     logL <- log(mean(root_probs / (nonextinct * lambda))) + sum(sf)
-    #logL <- log(mean(root_probs / nonextinct ))
+    
     cat("Likelihood:\t\t", logL,"\n")
-    browser()
     root_probs <- root_probs / sum(root_probs)
 
     # n <- length(phy$tip.label); (n-1) * log(2) - sum(log(1:n)) - sum(log(1:(n-1)))
@@ -105,8 +104,6 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
     } else if ( METHOD == "B" ) {
         F_ends <- matrix(0, nrow = nrow(phy$edge), ncol = k)
         
-        
-        
         for (i in rev(po)){
           parent <- phy$edge[i,1]
           child <- phy$edge[i,2]
@@ -119,31 +116,19 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
             #F_start <- D_ends[root_children[1],] * D_ends[root_children[2],] * lambda
             F_start <- D_ends[other_child,] * lambda
           }else{
-            
             parent_edge <- which(phy$edge[,2] == parent)
             children <- which(phy$edge[,1] == parent)
             other_child <- children[children != i]
             
-            #browser()
-            
             F_start <- F_ends[parent_edge,] * lambda * D_ends[other_child,]
-            #browser()
           }
           
           D_start <- D_ends[i,] 
           E_start <- E_ends[i,]
         
           tmp_res <- branch.prob.forwards(lambda, mu, eta, bl, F_start, D_start, E_start, STEPS, METHOD)
-          #browser()
           F_ends[i,] <- tmp_res$Froot
         }
-        
-        # state_likelihoods <- tmp_res$Froot
-        # my_children <- which( parents == observed_node )
-        # state_likelihoods <- lambda * state_likelihoods
-        # for (j in my_children){
-        #   state_likelihoods <- state_likelihoods * D_ends[j,]
-        # } 
 
         ASP <- matrix(0, nrow = length(phy$tip.label) - 1, ncol = k)
         
@@ -159,7 +144,6 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
           ASP[node - length(phy$tip.label),] <- ASP[node - length(phy$tip.label),] / sum(ASP[node - length(phy$tip.label),])
         }
         
-        #browser()
         
     } else if ( METHOD == "C" ) {
         D_start <- array(0,k)
@@ -183,7 +167,6 @@ stochastic.character.mapping <- function(phy, D_inits, lambda, mu, eta, STEPS, M
             for (j in my_children) tmp_state_likelihoods <- tmp_state_likelihoods * D_ends[j,]
 
             state_likelihoods <- state_likelihoods + tmp_state_likelihoods * D_ends[3,obs_state]
-
         }
         
       
