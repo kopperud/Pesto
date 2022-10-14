@@ -19,6 +19,7 @@ function readtree(treefile)
     nde <- node.depth.edgelength(phy)
     node_depths <- max(nde) - nde
     phy$node_depths <- node_depths
+    phy$branching_times <- branching.times(phy)
 
     po <- postorder(phy)
     phy$po <- po
@@ -37,6 +38,7 @@ function make_SSEdata(phy, datafile, ρ; include_traits = true)
     end
     node_depth = phy[:node_depths]
     tiplab = phy[:tip_label]
+    branching_times = phy[:branching_times]
 
     state_space = sort(unique(values(trait_data)))
 #    state_space = unique(string.(convert.(Int64, phy[:tip_state])))
@@ -62,6 +64,6 @@ function make_SSEdata(phy, datafile, ρ; include_traits = true)
     el = phy[:edge_length]
     po = phy[:po]
 
-    data = SSEdata(state_space, trait_data, edges, tiplab, node_depth, ρ, el, po)
+    data = SSEdata(state_space, trait_data, edges, tiplab, node_depth, ρ, el, branching_times, po)
     return(data)
 end

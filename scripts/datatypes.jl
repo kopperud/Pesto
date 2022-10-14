@@ -14,5 +14,11 @@ struct SSEdata
     node_depth
     ρ
     branch_lengths
+    branching_times
     po
+end
+
+struct BDconstant <: ContinuousUnivariateDistribution
+    λ
+    μ
 end

@@ -30,7 +30,7 @@ else
     λ = make_quantiles(d1, k)
     μ = make_quantiles(d2, k)
 end
-η = 0.1
+η = 0.05
 ρ = 1.0
 k = length(λ)
 
@@ -59,13 +59,12 @@ display(ASP)
 println()
 
 Ps = Dict()
-for ((key, D), (key, F)) in zip(Ds, Fs)
+for edge_idx in 1:(maximum(data.edges)-1)
     ## Try to normalize
 #    Dn(t) = D(t) ./ sum(D(t))
 #    Fn(t) = F(t) ./ sum(F(t))
 #    P(t) = Fn(t) .* Dn(t) ./ (sum(Fn(t) .* Dn(t)))
-    P(t) = F(t) .* D(t) ./ (sum(F(t) .* D(t)))
-    Ps[key] = P
+    Ps[edge_idx] = t -> Fs[edge_idx](t) .* Ds[edge_idx](t) ./ (sum(Fs[edge_idx](t) .* Ds[edge_idx](t)))
 end
 
 average_branch_rates = Dict()
@@ -118,7 +117,10 @@ i = 13
 ps = []
 for i in 1:14
     times1 = range(minimum(Fs[i].t), maximum(Fs[i].t); length = 100)
-    p = plot(plot(times1, hcat(Ds[i].(times1)...)', title = "D"), plot(times1, hcat(Fs[i].(times1)...)', title = "F"), plot(times1, hcat(Ps[i].(times1)...)', title = "P"), xflip = true, nrow = 1 )
+    p1 = plot(times1, hcat(Ds[i].(times1)...)', title = "D")
+    p2 = plot(times1, hcat(Fs[i].(times1)...)', title = "F")
+    p3 = plot(times1, hcat(Ps[i].(times1)...)', title = "P")
+    p = plot(p1, p2, p3, layout = (1,3), xflip = true, nrow = 1 )
     append!(ps, [p])
 end
 
