@@ -33,3 +33,6 @@
 
 ## swap files
 **/*.swp
+
+## Rhistory
+*.Rhistory
