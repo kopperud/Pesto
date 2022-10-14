@@ -1,5 +1,5 @@
 function logL_root(model::SSEconstant, data::SSEdata)
-    D_ends, sf, E = postorder(model, data)
+    D_ends, Ds, sf, E = postorder(model, data)
     root_index = length(data.tiplab)+1
     root_age = data.node_depth[root_index]
 
@@ -8,7 +8,9 @@ function logL_root(model::SSEconstant, data::SSEdata)
     D_right = D_ends[right_edge,:]
     D = D_left .* D_right .* model.λ
 
-    freqs = [0.5, 0.5]
+    #    freqs = [0.5, 0.5]
+    n = length(model.λ)
+    freqs = repeat([1.0 / n], n)
 
     # we divide by this to condition the probability density 
     # on that in order to have a tree in the first place, at 

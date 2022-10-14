@@ -1,13 +1,14 @@
 function postorder(model::SSEconstant, data::SSEdata)
     ## Compute the extinction probability through time
-    n = length(data.state_space)
+    n = length(model.λ)
     i_not_js = [setdiff(1:n, i) for i in 1:n]
     pE = [model.λ, model.μ, model.η, i_not_js, n]
     alg = RK4()
 
     tree_height = maximum(data.node_depth)
     tspan = (0.0, tree_height)
-    E0 = [1.0 - data.ρ, 1.0 - data.ρ]
+#    E0 = [1.0 - data.ρ, 1.0 - data.ρ]
+    E0 = repeat([1.0 - data.ρ], n)
     pr = ODEProblem(extinction_prob, E0, tspan, pE)
     E = solve(pr, alg)
 
@@ -16,7 +17,9 @@ function postorder(model::SSEconstant, data::SSEdata)
     Ntip = length(data.tiplab)
 
     ## Storing the Ds
-    D_ends = zeros(typeof(model.λ[1]), nrows, 2)
+    Ds = Dict()
+    ## Storing the solution at the end of the branch
+    D_ends = zeros(typeof(model.λ[1]), nrows, n)
     ## Storing the scaling factors
     sf = zeros(typeof(model.λ[1]), nrows)
 
@@ -32,7 +35,8 @@ function postorder(model::SSEconstant, data::SSEdata)
             trait_value = data.trait_data[species]
 
             if trait_value == "?" ## If we don't know or or didn't observe the trait
-                D = [1.0, 1.0] .* data.ρ
+#                D = [1.0, 1.0] .* data.ρ
+                D = repeat([1.0], n) .* data.ρ                
             else ## If we observed the trait and measured it 
                 trait_idx = convert.(Float64, trait_value .== data.state_space)
                 D = trait_idx .* data.ρ
@@ -47,7 +51,10 @@ function postorder(model::SSEconstant, data::SSEdata)
 
             #prob = remake(pr, u0 = u0, tspan = tspan)
             prob = ODEProblem(backward_prob, u0, tspan, pD)
-            sol = solve(prob, alg, save_everystep = false)[end]
+            #sol = solve(prob, alg, save_everystep = false)[end]
+            sol = solve(prob, alg)
+            Ds[i] = sol
+            sol = sol[end]
 
             k = sum(sol)
             sol = sol ./ k
@@ -71,7 +78,10 @@ function postorder(model::SSEconstant, data::SSEdata)
 
             #prob = remake(pr, u0 = u0, tspan = tspan)
             prob = ODEProblem(backward_prob, u0, tspan, pD)
-            sol = solve(prob, alg, save_everystep = false)[end]
+#            sol = solve(prob, alg, save_everystep = false)[end]
+            sol = solve(prob, alg)
+            Ds[i] = sol
+            sol = sol[end]
             k = sum(sol)
             sol = sol ./ k
             D_ends[i,:] = sol
@@ -83,5 +93,5 @@ function postorder(model::SSEconstant, data::SSEdata)
             sf[i] += logk
         end
     end
-    return(D_ends, sf, E)
+    return(D_ends, Ds, sf, E)
 end

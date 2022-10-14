@@ -9,8 +9,10 @@ function preorder(model, data, E, D_ends)
     left_root_edge = findall(data.edges[:,1] .== root_node)[1]
 
     nrows = size(data.edges, 1)
+    ## Store the numerical solution of F at the end of the branch
     F_ends = zeros(typeof(model.λ[1]), nrows, k)
-
+    ## Store the whole `F(t)` per branch
+    Fs = Dict()
 
     pF = [model.λ, model.μ, model.η, i_not_js, k, E]
 
@@ -40,7 +42,10 @@ function preorder(model, data, E, D_ends)
 
         u0 = F_start
         prob = ODEProblem(forward_prob, u0, tspan, pF)
-        sol = solve(prob, alg, save_everystep = false)[end]
+        #sol = solve(prob, alg, save_everystep = false)[end]
+        sol = solve(prob, alg)
+        Fs[i] = sol
+        sol = sol[end]
 
         F_ends[i,:] = sol
     end
@@ -60,5 +65,5 @@ function preorder(model, data, E, D_ends)
         ASP[node - ntips,:] = asp ./ sum(asp)
     end
 
-    return(ASP)
+    return(ASP, Fs)
 end

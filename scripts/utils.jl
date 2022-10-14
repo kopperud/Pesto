@@ -27,10 +27,14 @@ function readtree(treefile)
     return(phy)
 end
 
-function make_SSEdata(phy, datafile, ρ)
+function make_SSEdata(phy, datafile, ρ; include_traits = true)
     df = CSV.File(datafile)
-    
-    trait_data = Dict(taxon => string(state) for (taxon, state) in zip(df[:Taxon], df[:state]))
+   
+    if include_traits
+        trait_data = Dict(taxon => string(state) for (taxon, state) in zip(df[:Taxon], df[:state]))
+    else
+        trait_data = Dict(taxon => "?" for taxon in df[:Taxon])
+    end
     node_depth = phy[:node_depths]
     tiplab = phy[:tip_label]
 
