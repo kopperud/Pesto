@@ -21,8 +21,7 @@ function Distributions.loglikelihood(model::BDconstant, data::SSEdata)
     E(t) = EM(t)[1]
     M(t) = EM(t)[2]
 
-#    dM(t) = ForwardDiff.derivative(M, t)
-    dM(t) = EM(t, Val{1})[2]
+    dM(t) = EM(t, Val{1})[2] # The first derivative of M(t)
     n = length(data.branching_times)
     
     Mroot = M(root_age)
@@ -62,10 +61,10 @@ using Turing
     data ~ BDconstant(λ, μ)
 end
 
-iterations = 500
+function estimate_constant_bdp(data::SSEdata; iterations = 500)
+    chain = sample(birthdeath_constant(data), NUTS(), iterations; progress=true)
 
-chain = sample(birthdeath_constant(data), NUTS(), iterations; progress=true)
-
-#scatter(chain[:d] + chain[:μ], chain[:μ])
-median_λ = median(chain[:d] + chain[:μ])
-median_μ = median(chain[:μ])
+    median_λ = median(chain[:d] + chain[:μ])
+    median_μ = median(chain[:μ])
+    return(chain, median_λ, median_μ)
+end
