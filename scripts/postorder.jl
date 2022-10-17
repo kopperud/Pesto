@@ -26,7 +26,7 @@ function postorder(model::SSEconstant, data::SSEdata)
     pD = [model.λ, model.μ, model.η, i_not_js, n, E]
 
     #for i in 1:nrows
-    for i in data.po
+    @showprogress for i in data.po
         anc, dec = data.edges[i,:]
 
         #if is tip

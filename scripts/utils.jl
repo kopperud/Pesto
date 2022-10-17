@@ -16,6 +16,7 @@ function readtree(treefile)
     library(ape)
 
     phy <- read.nexus(treefile)
+    #phy <- read.tree(treefile)
     nde <- node.depth.edgelength(phy)
     node_depths <- max(nde) - nde
     phy$node_depths <- node_depths
@@ -29,12 +30,12 @@ function readtree(treefile)
 end
 
 function make_SSEdata(phy, datafile, ρ; include_traits = true)
-    df = CSV.File(datafile)
    
     if include_traits
+        df = CSV.File(datafile)
         trait_data = Dict(taxon => string(state) for (taxon, state) in zip(df[:Taxon], df[:state]))
     else
-        trait_data = Dict(taxon => "?" for taxon in df[:Taxon])
+        trait_data = Dict(taxon => "?" for taxon in phy[:tip_label])
     end
     node_depth = phy[:node_depths]
     tiplab = phy[:tip_label]

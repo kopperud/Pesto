@@ -16,7 +16,7 @@ function preorder(model, data, E, D_ends)
 
     pF = [model.λ, model.μ, model.η, i_not_js, k, E]
 
-    for i in reverse(data.po)
+    @showprogress for i in reverse(data.po)
         parent = data.edges[i,1]
         child = data.edges[i,2]
         
