@@ -45,6 +45,7 @@ speciation_mean.setValue( rate_mean )
 #moves.append( mvScale(speciation_mean, lambda=1, tune=true, weight=2.0) )
 
 speciation_sd ~ dnExponential( 1.0 / H )
+speciation_sd.setValue( 3 * H )
 #moves.append( mvScale(speciation_sd, lambda=1, tune=true, weight=2.0) )
 
 ### Create a deterministic variable for the speciation rate categories
@@ -58,10 +59,15 @@ extinction_mean.setValue( rate_mean / 2.0 )
 
 ### Create a deterministic variable for the speciation rate categories
 ### Assume that all extinction rates are equal
-extinction := rep(extinction_mean, NUM_RATE_CATEGORIES)
+## extinction := rep(extinction_mean, NUM_RATE_CATEGORIES)
+## Discretized lognormal distribution
+extinction_sd ~ dnExponential( 1.0 / H )
+extinction_sd.setValue( 3 * H )
+extinction := fnDiscretizeDistribution( dnLognormal(ln(extinction_mean), extinction_sd), NUM_RATE_CATEGORIES )
 
 ### Create a exponential distributed variable for the rate of rate-shift events
 event_rate ~ dnUniform(0.0, 100.0/tree_length)
+event_rate.setValue(0.1)
 #moves.append( mvScale(event_rate, lambda=1, tune=true, weight=2.0) )
 
 
