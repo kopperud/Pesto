@@ -51,6 +51,7 @@ library(ggplot2)
 library(dplyr)
 
 class(phy) <- "phylo"
+th <- max(node.depth.edgelength(phy))
 
 df1 <- tibble("node" = 1:max(phy$edge),
             "Speciation rate" = lambda_average)
@@ -62,7 +63,11 @@ td_phy <- as.treedata(phydf)
 p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
   ggtitle("backwards-forwards approach")
 p1 <- p1a +
-  geom_tiplab()
+  geom_tiplab() +
+    theme(legend.position = c(0.2, 0.8)) +
+    xlim(c(0.0, th + 10))
+
+
 ggsave("figures/p1a.pdf", p1a, width = 800, height = 800, units = "mm")
 """
 
@@ -75,19 +80,22 @@ mn <- matchNodes(phy)
 rates <- as_tibble(read.table("output/bears_BDS_rates.log", header = TRUE))
 rates <- select(rates, starts_with("avg_lambda"))
 
-lambda_means <- unname(sapply(rates, mean))
+lambda_means <- sapply(1:max(phy$edge), function(i) mean(rates[[i]]))
 my_order <- mn[order(mn$Rev),"R"]
-lambda_means <- lambda_means[my_order]
 
-d2 <- tibble("node" = 1:max(phy$edge),
+d2 <- tibble("node" = my_order,
             "Speciation rate" = lambda_means)
+d2[d2$node == length(phy$tip.label)+1, "Speciation rate"] <- NA ## assign NA at root
 phydf2 <- merge(x, d2, by = "node")
 phy2 <- as.treedata(phydf2)
 p2 <- ggtree(phy2, aes(color = `Speciation rate`)) +
     geom_tiplab() +
-    ggtitle("RevBayes")
+    ggtitle("RevBayes") +
+    theme(legend.position = c(0.2, 0.8)) +
+    xlim(c(0.0, th+10))
 
-p1 | p2 
+p_combined <- p2 | p1 
+ggsave("figures/tree_rb_fb_pdf.pdf", p_combined, width = 250, height = 250, units = "mm")
 """
 
 @rget rates
@@ -106,7 +114,6 @@ for (i, Rev_index) in enumerate(mn[!,"Rev"])
         l3 = ""
     end
     StatsPlots.violin!(vplot, [i], [rates[!, Rev_index]], label = l1, color = "lightblue")
-#    StatsPlots.scatter!(vplot, [i], [median(rates[!, Rev_index])], color = "orange", label = l2, alpha = 0.5)
     StatsPlots.scatter!(vplot, [i], [mean(rates[!, Rev_index])], color = "red", label = l3, alpha = 0.7)
 end
 StatsPlots.scatter!(vplot, 1:15, average_node_rates["λ"], label = "New, Backwards-forwards pass", color = "black", alpha = 0.7)
