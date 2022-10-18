@@ -1,20 +1,7 @@
-using CSV
 using RCall
-using DifferentialEquations
 using Distributions
-using ProgressMeter
 using StatsPlots
-
-include("datatypes.jl")
-include("utils.jl")
-include("diversitree_bisse.jl")
-include("postorder.jl")
-include("preorder.jl")
-include("ODE.jl")
-include("logLroot.jl")
-include("constantBDP.jl")
-include("tree_rates.jl")
-include("backwards_forwards.jl")
+using Diversification
 
 ##############################
 ##
@@ -23,8 +10,6 @@ include("backwards_forwards.jl")
 ###############################
 treefile = "data/bears.tre"
 datafile = "data/bears.csv"
-#treefile = "data/actinopterygii/actinopt_full_1.tree"
-#datafile = ""
 phy = readtree(treefile)
 ρ = 1.0
 data = make_SSEdata(phy, datafile, ρ; include_traits = false)
@@ -38,37 +23,22 @@ H = 0.587405
 d1 = LogNormal(log(0.08251888), 3 * H)
 d2 = LogNormal(log(0.08251888/2.0), 3 * H)
 
-bs = []
-ks = [2, 4, 8, 16, 32, 64, 128, 256]
-for k in ks 
-    λ = make_quantiles(d1, k)
-    μ = make_quantiles(d2, k)
-    η = 0.1
-    k = length(λ)
+k = 20
+λ = make_quantiles(d1, k)
+μ = make_quantiles(d2, k)
+η = 0.1
 
-    model = SSEconstant(λ, μ, η)
+model = SSEconstant(λ, μ, η)
 
-    ## Calculate the backwards-forwards pass equations
-    b = @benchmark Ds, Fs = backwards_forwards_pass(model, data; verbose = false) samples = 50
-    Ds, Fs = backwards_forwards_pass(model, data; verbose = false) 
-    res = calculate_tree_rates(data, model, Ds, Fs; verbose = false);
-    average_node_rates = res["average_node_rates"]
+## Calculate the backwards-forwards pass equations
+Ds, Fs = backwards_forwards_pass(model, data; verbose = false) 
+res = calculate_tree_rates(data, model, Ds, Fs; verbose = false);
+average_node_rates = res["average_node_rates"]
 
-    phy = Dict("edge" => data.edges,
-              "tip.label" => data.tiplab,
-              "Nnode" => length(data.tiplab)-1,
-             "edge.length" => data.branch_lengths)
-    append!(bs, [b])
-    print(".")
-end
-
-tplot = plot()
-for (k, b) in zip(ks, bs)
-    violin!(tplot, [k], [b.times .* 10^(-9)], lab = string(k)*" categories")
-end
-plot!(tplot, [ks[1], ks[end]], [mean(bs[1].times), mean(bs[end].times)] .* 10^(-9), lab = "Linear scaling")
-plot!(tplot, legend = :topleft, ylab = "seconds (50 replicates)")
-
+phy = Dict("edge" => data.edges,
+      "tip.label" => data.tiplab,
+      "Nnode" => length(data.tiplab)-1,
+     "edge.length" => data.branch_lengths)
 
 lambda_average = average_node_rates["λ"]
 @rput lambda_average
@@ -93,7 +63,7 @@ p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
   ggtitle("backwards-forwards approach")
 p1 <- p1a +
   geom_tiplab()
-#ggsave("figures/p1.pdf", p1a, width = 800, height = 800, units = "mm")
+ggsave("figures/p1a.pdf", p1a, width = 800, height = 800, units = "mm")
 """
 
 ## Compare with RevBayes output
@@ -119,6 +89,7 @@ p2 <- ggtree(phy2, aes(color = `Speciation rate`)) +
 
 p1 | p2 
 """
+
 @rget rates
 @rget mn
 mn = convert.(Int64, mn)
@@ -141,26 +112,6 @@ end
 StatsPlots.scatter!(vplot, 1:15, average_node_rates["λ"], label = "New, Backwards-forwards pass", color = "black", alpha = 0.7)
 vplot2 = deepcopy(vplot)
 plot!(vplot2, ylim = (0.0, 0.5), title = "different y-axis limits")
-plot(vplot, vplot2)
+branch_rateplot = plot(vplot, vplot2)
 
-
-
-ps = []
-for i in 1:14
-    times1 = range(minimum(Fs[i].t), maximum(Fs[i].t); length = 100)
-    p1 = plot(times1, hcat(Ds[i].(times1)...)', title = "D")
-    p2 = plot(times1, hcat(Fs[i].(times1)...)', title = "F")
-    p3 = plot(times1, hcat(Ps[i].(times1)...)', title = "P")
-    p = plot(p1, p2, p3, layout = (1,3), xflip = true, nrow = 1 )
-    append!(ps, [p])
-end
-
-
-#if false
-#    println("Diversitree-BISSE model:\n")
-#    asr = anc_state_prob_bisse(treefile, datafile, model)
-#    println("Ancestral state marginal probabilities:")
-#    display(asr)
-#end
-
-
+savefig(branch_rateplot, "figures/branch_rates_RevBayes_versus_new_approach_bears.pdf")
