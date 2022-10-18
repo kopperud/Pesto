@@ -33,6 +33,14 @@ model = SSEconstant(λ, μ, η)
 ## Calculate the backwards-forwards pass equations
 Ds, Fs = backwards_forwards_pass(model, data; verbose = false) 
 res = calculate_tree_rates(data, model, Ds, Fs; verbose = false);
+
+results = []
+nts = [10, 50, 100, 150, 500, 750, 1000, 2500, 5000, 10000]
+for nt in nts 
+    x = calculate_tree_rates(data, model, Ds, Fs; verbose = false, nt = nt)
+    append!(results, [x])
+end
+
 average_node_rates = res["average_node_rates"]
 
 phy = Dict("edge" => data.edges,
@@ -127,12 +135,23 @@ Ps = res["Ps"]
 Fs = res["Fs"]
 Ds = res["Ds"]
 
-ps = []
+plots = []
+pcombined = plot(xscale = :log)
 for i in 1:14
-    times1 = range(minimum(Fs[i].t), maximum(Fs[i].t); length = 100)
-    p1 = plot(times1, hcat(Ds[i].(times1)...)', title = "D")
-    p2 = plot(times1, hcat(Fs[i].(times1)...)', title = "F")
-    p3 = plot(times1, hcat(Ps[i].(times1)...)', title = "P")
-    p = plot(p1, p2, p3, layout = (1,3), xflip = true, nrow = 1 )
-    append!(ps, [p])
+    y = [res["average_node_rates"]["λ"][i] for res in results]
+    x = nts
+   
+    ## separately
+    p = plot(x, y, xscale = :log)
+    scatter!(p, x, y)
+
+    #combined
+    plot!(pcombined, x, y, lab = "")
+    scatter!(pcombined, x, y, lab = "", color = "black")
+
+    append!(plots, [p])
 end
+plot(plots...)
+
+savefig(plot(plots[1:12]...), "figures/how_many_time_points_per_branch.pdf")
+
