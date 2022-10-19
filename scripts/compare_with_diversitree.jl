@@ -8,8 +8,7 @@ import ProgressMeter
 ###############################
 treefile = "data/bears.tre"
 datafile = "data/bears.csv"
-#treefile = "data/actinopterygii/actinopt_full_1.tree"
-#datafile = ""
+
 phy = readtree(treefile)
 ρ = 1.0
 data = make_SSEdata(phy, datafile, ρ; include_traits = true)
@@ -39,7 +38,8 @@ println("New approach, forward-backward pass:\n")
 #Ds, Fs = backwards_forwards_pass(model, data; verbose = true);
 logL = logL_root(model, data)
 D_ends, Ds, sf, E = postorder(model, data; verbose = false);
-ASP, Fs = Diversification.preorder(model, data, E, D_ends; verbose = false);
+Fs, F_ends = preorder(model, data, E, D_ends; verbose = false);
+ASP = ancestral_state_probs(data, model, D_ends, F_ends);
 
 println("logL = ", logL)
 display(ASP)

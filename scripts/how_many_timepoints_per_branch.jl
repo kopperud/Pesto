@@ -136,14 +136,17 @@ Fs = res["Fs"]
 Ds = res["Ds"]
 
 plots = []
-pcombined = plot(xscale = :log)
+pcombined = plot(xscale = :log10)
+RB_rates = [mean(rates[!, Rev_index]) for Rev_index in mn[!, "Rev"]]
+
 for i in 1:14
     y = [res["average_node_rates"]["λ"][i] for res in results]
     x = nts
    
     ## separately
-    p = plot(x, y, xscale = :log)
-    scatter!(p, x, y)
+    p = plot(x, y, xscale = :log10, legend = :none, lab = "", title = "node "*string(i), titlefontsize = 6)
+    plot!(p, [x[1], x[end]], [RB_rates[i], RB_rates[i]], lab = "Revbayes")
+    scatter!(p, x, y, lab = "Julia impl") 
 
     #combined
     plot!(pcombined, x, y, lab = "")
@@ -151,6 +154,8 @@ for i in 1:14
 
     append!(plots, [p])
 end
+plot!(plots[9], legend = :topleft, legendfontsize = 6)
+pp = plot(plots[1:12]..., size = (200, 200))
 plot(plots...)
 
 savefig(plot(plots[1:12]...), "figures/how_many_time_points_per_branch.pdf")
