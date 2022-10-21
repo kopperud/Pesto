@@ -39,9 +39,20 @@ println("New approach, forward-backward pass:\n")
 logL = logL_root(model, data)
 D_ends, Ds, sf, E = postorder(model, data; verbose = false);
 Fs, F_ends = preorder(model, data, E, D_ends; verbose = false);
+res = calculate_tree_rates(data, model, Ds, Fs; verbose = true);
+
 ASP = ancestral_state_probs(data, model, D_ends, F_ends);
 
 println("logL = ", logL)
 display(ASP)
 
+p = plot(xlab = "Ancestral state probability\n(present approach)", ylab = "Ancestral state probability (diversitree)", legend = :topleft)
+plot!(p, [0.0, 1.0], [0.0, 1.0], lab = "One-to-one", color = "black")
+for i in 1:2
+    scatter!(p, ASP[:,i], asr[:,i], lab = "State "*string(i))
+end
 
+#hcat([res["Ps"][i](Fs[i].t[1]) for i in 1:14]...)'
+
+
+savefig(p, "figures/compare_with_diversitree.pdf")
