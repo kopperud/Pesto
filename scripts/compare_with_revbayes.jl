@@ -145,21 +145,16 @@ for (i, col) in enumerate(eachcol(rates))
 end
 savefig(plot(hs[1:4]...), "figures/stochastic_character_map_sample_bears.pdf")
 
-xs = []
-ys = average_node_rates["λ"]
-xerrors1 = []
-xerrors2 = []
+ys = []
+xs = average_node_rates["λ"]
 for (i, Rev_index) in enumerate(mn[!,"Rev"])
-    x = mean(rates[!, Rev_index])
-    xerror = quantile(rates[!, Rev_index], [0.025, 0.975])
-
-    append!(xs, x)
-    append!(xerrors1, xerror[1])
-    append!(xerrors2, xerror[2])
+    y = mean(rates[!, Rev_index])
+    append!(ys, y)
 end
 
-cplot = scatter(xs, ys, xerror = (xerrors1, xerrors2), xlab = "RevBayes (mean + 95% CI)", ylab = "New approach", lab = "Average branch speciation rate", legend = :bottomright)
-plot!(cplot, [0.05, 0.25], [0.05, 0.25], color = "gray", lab = "One-to-one")
+cplot = scatter(xs, ys,  ylab = "RevBayes", xlab = "New approach", lab = "Average branch speciation rate", legend = :topleft, lim = (0.05, 0.25))
+plot!(cplot, [0.05, 0.25], [0.05, 0.25], color = "black", lab = "One-to-one")
+savefig(cplot, "figures/cplot.pdf")
 
 
 ## varying time points
@@ -169,7 +164,9 @@ using CSV
 dfs = Dict()
 nts = [500, 1000, 1500, 5000, 10000]
 for nt in nts
-    df = CSV.read("output/bears_BDS_rates_" * string(nt)* "_run_1.log", DataFrame)
+    df1 = CSV.read("output/bears_BDS_rates_" * string(nt)* "_run_1.log", DataFrame)
+    df2 = CSV.read("output/bears_BDS_rates_" * string(nt)* "_run_2.log", DataFrame)
+    df = [df1;df2]
     dfs[nt] = df
 end
 
@@ -188,14 +185,28 @@ y = hcat(values(l)...)
 
 ps2 = []
 for i in 1:15
-    p = plot(nts, y[i,:], title = "branch "*string(i), lab = "", xlab = "Number of time slices", ylab = "Mean rate", xscale = :log)
-    scatter!(p, nts, y[i,:], lab = "RevBayes")
+    p = plot(nts, y[i,:], title = "branch "*string(i), lab = "", xlab = "Number of time slices", ylab = "Mean rate", xscale = :log, color = "black")
+    scatter!(p, nts, y[i,:], lab = "RevBayes", color = "black")
     plot!(p, [nts[1], nts[end]], [average_node_rates["λ"][i], average_node_rates["λ"][i]], lab = "Julia impl")
     append!(ps2, [p])
 end
 
+for i in 1:6
+    if !(i in (1,4)) 
+        plot!(ps2[i], ylab = "")
+    end
 
+    if !(i in (4,5,6))
+        plot!(ps2[i], xlab = "")
+    end
+
+    if i != 1
+        plot!(ps2[i], legend = :none)
+    end
+end
 p_timeslices = plot(ps2[1:6]..., size = (800, 800))
+
+
 savefig(p_timeslices, "figures/p_timeslices.pdf")
 
 
