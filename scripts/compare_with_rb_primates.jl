@@ -11,7 +11,8 @@ using Diversification
 treefile = "data/bears.tre"
 datafile = "data/bears.csv"
 phy = readtree(treefile)
-ρ = 1.0
+N_total_species = 367
+ρ = N_total_species / length(phy[:tip_label])
 data = make_SSEdata(phy, datafile, ρ; include_traits = false)
 
 ##############################
@@ -19,14 +20,16 @@ data = make_SSEdata(phy, datafile, ρ; include_traits = false)
 ##   Set up the model
 ##
 ###############################
+tree_length = sum(data.branch_lengths)
+rate_mean = (N_total_species - 2.0)/ tree_length
 H = 0.587405
-d1 = LogNormal(log(0.08251888), 3 * H)
-d2 = LogNormal(log(0.08251888/2.0), 3 * H)
+d1 = LogNormal(log(rate_mean), 3 * H)
+d2 = LogNormal(log(rate_mean/2.0), 3 * H)
 
 k = 20
 λ = make_quantiles(d1, k)
 μ = make_quantiles(d2, k)
-η = 0.1
+η = 0.03
 
 model = SSEconstant(λ, μ, η)
 
@@ -136,70 +139,3 @@ for i in 1:14
     p = plot(p1, p2, p3, layout = (1,3), xflip = true, nrow = 1 )
     append!(ps, [p])
 end
-
-## histogram of rates
-hs = []
-for (i, col) in enumerate(eachcol(rates))
-    p = histogram(col, xlab = "rate", ylab = "frequency", title = "branch "*string(i))
-    append!(hs, [p])
-end
-savefig(plot(hs[1:4]...), "figures/stochastic_character_map_sample_bears.pdf")
-
-xs = []
-ys = average_node_rates["λ"]
-xerrors1 = []
-xerrors2 = []
-for (i, Rev_index) in enumerate(mn[!,"Rev"])
-    x = mean(rates[!, Rev_index])
-    xerror = quantile(rates[!, Rev_index], [0.025, 0.975])
-
-    append!(xs, x)
-    append!(xerrors1, xerror[1])
-    append!(xerrors2, xerror[2])
-end
-
-cplot = scatter(xs, ys, xerror = (xerrors1, xerrors2), xlab = "RevBayes (mean + 95% CI)", ylab = "New approach", lab = "Average branch speciation rate", legend = :bottomright)
-plot!(cplot, [0.05, 0.25], [0.05, 0.25], color = "gray", lab = "One-to-one")
-
-
-## varying time points
-using DataFrames
-using CSV
-
-dfs = Dict()
-nts = [500, 1000, 1500, 5000, 10000]
-for nt in nts
-    df = CSV.read("output/bears_BDS_rates_" * string(nt)* "_run_1.log", DataFrame)
-    dfs[nt] = df
-end
-
-l = Dict()
-for nt in nts
-    df = dfs[nt]
-
-    res = []
-    for (i, Rev_index) in enumerate(mn[!, "Rev"])
-        append!(res, mean(df[!, "avg_lambda[" * string(Rev_index) * "]"]))
-    end
-    l[nt] = res
-end
-
-y = hcat(values(l)...)
-
-ps2 = []
-for i in 1:15
-    p = plot(nts, y[i,:], title = "branch "*string(i), lab = "", xlab = "Number of time slices", ylab = "Mean rate", xscale = :log)
-    scatter!(p, nts, y[i,:], lab = "RevBayes")
-    plot!(p, [nts[1], nts[end]], [average_node_rates["λ"][i], average_node_rates["λ"][i]], lab = "Julia impl")
-    append!(ps2, [p])
-end
-
-
-p_timeslices = plot(ps2[1:6]..., size = (800, 800))
-savefig(p_timeslices, "figures/p_timeslices.pdf")
-
-
-
-
-
-
