@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-#SBATCH --job-name=amniote-mix
+#SBATCH --job-name=bears_SCM
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=b.kopperud@lmu.de
 #SBATCH --mem=2GB
@@ -10,8 +10,8 @@
 
 module load gnu openmpi
 
-source "scripts/env.sh"
+#source "scripts/env.sh"
 
-TIMESLICES=$(cat arg_list.txt | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
+TIMESLICES=$(cat scripts/arg_list.txt | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 
-mpirun -c 2 rb-mpi --args ${TIMESLICES} --file scripts/mcmc_BDS_bears.rev
+mpirun -np 2 rb-mpi --args ${TIMESLICES} --file scripts/mcmc_BDS_bears.Rev
