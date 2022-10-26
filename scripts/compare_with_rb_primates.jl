@@ -34,7 +34,7 @@ k = 20
 model = SSEconstant(λ, μ, η)
 
 ## Calculate the backwards-forwards pass equations
-Ds, Fs = backwards_forwards_pass(model, data; verbose = false) 
+Ds, Fs = backwards_forwards_pass(model, data; verbose = true) 
 res = calculate_tree_rates(data, model, Ds, Fs; verbose = false);
 average_node_rates = res["average_node_rates"]
 

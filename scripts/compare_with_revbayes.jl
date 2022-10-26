@@ -2,6 +2,8 @@ using RCall
 using Distributions
 using StatsPlots
 using Diversification
+using DataFrames
+using CSV
 
 ##############################
 ##
@@ -140,8 +142,8 @@ end
 ## histogram of rates
 hs = []
 for (i, col) in enumerate(eachcol(rates))
-    p = histogram(col, xlab = "rate", ylab = "frequency", title = "branch "*string(i))
-    append!(hs, [p])
+    px = histogram(col, xlab = "rate", ylab = "frequency", title = "branch "*string(i))
+    append!(hs, [px])
 end
 savefig(plot(hs[1:4]...), "figures/stochastic_character_map_sample_bears.pdf")
 
@@ -158,37 +160,52 @@ savefig(cplot, "figures/cplot.pdf")
 
 
 ## varying time points
-using DataFrames
-using CSV
 
 dfs = Dict()
-nts = [500, 1000, 1500, 5000, 10000]
+#nts = [500, 1000, 1500, 5000, 10000]
+nts = [250, 500, 1000, 1500, 5000, 7500, 10000]
+filenames = Base.Filesystem.readdir("cluster_output")
+filenames = filenames[contains.(filenames, "rates")]
+filenames = filenames[contains.(filenames, "run")]
+
 for nt in nts
-    df1 = CSV.read("output/bears_BDS_rates_" * string(nt)* "_run_1.log", DataFrame)
-    df2 = CSV.read("output/bears_BDS_rates_" * string(nt)* "_run_2.log", DataFrame)
-    df = [df1;df2]
-    dfs[nt] = df
+    df1 = []
+    for filename in filenames
+        if string(nt) == split(filename, "_")[4]
+            append!(df1, [CSV.read("cluster_output/" * filename, DataFrame)])
+        end
+    end
+#    df1 = CSV.read("cluster_output/bears_BDS_rates_" * string(nt)* "_run_1.log", DataFrame)
+#    df2 = CSV.read("cluster_output/bears_BDS_rates_" * string(nt)* "_run_2.log", DataFrame)
+    dfs[nt] = vcat(df1...)
 end
 
 l = Dict()
 for nt in nts
     df = dfs[nt]
 
-    res = []
+    ll = []
     for (i, Rev_index) in enumerate(mn[!, "Rev"])
-        append!(res, mean(df[!, "avg_lambda[" * string(Rev_index) * "]"]))
+        append!(ll, mean(df[!, "avg_lambda[" * string(Rev_index) * "]"]))
     end
-    l[nt] = res
+    l[nt] = ll
 end
 
 y = hcat(values(l)...)
 
 ps2 = []
+samples = [size(dfs[nt])[1] for nt in nts]
 for i in 1:15
-    p = plot(nts, y[i,:], title = "branch "*string(i), lab = "", xlab = "Number of time slices", ylab = "Mean rate", xscale = :log, color = "black")
-    scatter!(p, nts, y[i,:], lab = "RevBayes", color = "black")
-    plot!(p, [nts[1], nts[end]], [average_node_rates["λ"][i], average_node_rates["λ"][i]], lab = "Julia impl")
-    append!(ps2, [p])
+    myplot = plot(nts, y[i,:], title = "branch "*string(i), lab = "", xlab = "Number of time slices", ylab = "Mean rate", xscale = :log10, color = "black")
+    scatter!(myplot, nts, y[i,:], lab = "RevBayes", color = "black")
+    plot!(myplot, [nts[1], nts[end]], [average_node_rates["λ"][i], average_node_rates["λ"][i]], lab = "Julia impl")
+
+    if i == 1
+        for (nt, yj, txt) in zip(nts, y[i,:], samples)
+            annotate!(nt, yj-0.0002, text(txt, :top, 6))
+        end
+    end
+    append!(ps2, [myplot])
 end
 
 for i in 1:6
