@@ -15,6 +15,7 @@
 
 # Read in the observed phylogeny
 observed_phylogeny = readTrees("data/bears.tre")[1]
+data <- readCharacterData( "data/bears.nex")
 
 # initialize the moves and monitors vectors
 moves    = VectorMoves()
@@ -26,6 +27,11 @@ monitors = VectorMonitors()
 ####################
 # Create the rates #
 ####################
+
+
+#speciation <- [2.0, 1.0]
+#extinction <- [0.5, 0.1]
+#eta <- 0.1
 
 
 speciation <- [0.2, 0.1]
@@ -47,28 +53,24 @@ timetree ~ dnCDBDP( rootAge           = observed_phylogeny.rootAge(),
 
 ### clamp the model with the "observed" tree
 timetree.clamp( observed_phylogeny )
+#timetree.clampCharData( data )
 
 
-
-
-### set up the monitors that will output parameter values to file and screen
-monitors.append( mnScreen(printgen=100) )
-monitors.append( mnStochasticBranchRate(cdbdp=timetree, printgen=1, filename="output/BDS_SCM.log") )
-
-
-################
-# The Analysis #
-################
-
-### workspace model wrapper ###
-mymodel = model(timetree)
-
-### workspace mcmc
-mymcmc = mcmc(mymodel, monitors, moves, nruns=1, moveschedule="random")
-
-### run the MCMC
-mymcmc.run(generations=100000)
-
+"ASP"
+timetree.printASP()
+"DBRM"
+timetree.computeAverageRates()
+avg_speciation <- timetree.averageSpeciationRate()
+print("Branch",sep="",file="output/BDS_DBRM.log",append=FALSE)
+for ( i in 1:avg_speciation.size() ) {
+  print("\tavg_lambda[",i,"]",sep="",file="output/BDS_DBRM.log",append=TRUE)
+}
+print("\n",sep="",file="output/BDS_DBRM.log",append=TRUE)
+print("Rate",sep="",file="output/BDS_DBRM.log",append=TRUE)
+for ( i in 1:avg_speciation.size() ) {
+  print("\t",avg_speciation[i],sep="",file="output/BDS_DBRM.log",append=TRUE)
+}
+print("\n",sep="",file="output/BDS_DBRM.log",append=TRUE)
 
 
 q()
