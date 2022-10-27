@@ -1,0 +1,78 @@
+################################################################################
+#
+# RevBayes Example: Bayesian inference of diversification rates under a
+#                   branch-specific birth-death model
+#
+#
+# authors: Sebastian Hoehna
+#
+################################################################################
+
+
+#######################
+# Reading in the Data #
+#######################
+
+# Read in the observed phylogeny
+observed_phylogeny = readTrees("data/actinopterygii/actinopt_full_1.tree")[1]
+#observed_phylogeny = readTrees("data/primates.tre")[1]
+
+# initialize the moves and monitors vectors
+moves    = VectorMoves()
+monitors = VectorMonitors()
+
+####################
+# Create the rates #
+####################
+
+H <- 0.587405
+rate_mean <- 0.08251888
+
+k <- 20
+eta <- 0.1
+
+speciation := fnDiscretizeDistribution( dnLognormal(ln(rate_mean), 3 * H), k )
+extinction := fnDiscretizeDistribution( dnLognormal(ln(rate_mean / 2.0), 3 * H), k )
+
+
+#### construct a variable for the tree drawn from a birth death process
+timetree ~ dnCDBDP( rootAge           = observed_phylogeny.rootAge(),
+                    speciationRates   = speciation,
+                    extinctionRates   = extinction,
+                    Q                 = fnJC(k),
+                    pi                = simplex(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1),
+                    delta             = eta,
+                    rho               = 1.0,
+                    condition         = "time",
+                    nTimeSlices       = 1000)
+
+
+### clamp the model with the "observed" tree
+timetree.clamp( observed_phylogeny )
+#timetree.clampCharData( data )
+
+time_start = time()
+#"ASP"
+#timetree.printASP()
+"DBRM"
+#timetree.computeAverageRates()
+avg_speciation <- timetree.averageSpeciationRate()
+
+time_end = time()
+
+print("Time elapsed: ", (time_end - time_start) / (1000.0 * 60.0), " minutes." )
+
+if (FALSE){
+    print("Branch",sep="",file="output/BDS_DBRM_fish.log",append=FALSE)
+    for ( i in 1:avg_speciation.size() ) {
+      print("\tavg_lambda[",i,"]",sep="",file="output/BDS_DBRM_fish.log",append=TRUE)
+    }
+    print("\n",sep="",file="output/BDS_DBRM_fish.log",append=TRUE)
+    print("Rate",sep="",file="output/BDS_DBRM_fish.log",append=TRUE)
+    for ( i in 1:avg_speciation.size() ) {
+      print("\t",avg_speciation[i],sep="",file="output/BDS_DBRM_fish.log",append=TRUE)
+    }
+    print("\n",sep="",file="output/BDS_DBRM_fish.log",append=TRUE)
+}
+
+#q()
