@@ -180,6 +180,7 @@ for nt in nts
     dfs[nt] = vcat(df1...)
 end
 
+
 l = Dict()
 for nt in nts
     df = dfs[nt]
@@ -191,7 +192,9 @@ for nt in nts
     l[nt] = ll
 end
 
-y = hcat(values(l)...)
+#y = hcat(values(l)...)
+y = hcat([l[key] for key in nts]...)
+
 
 ps2 = []
 samples = [size(dfs[nt])[1] for nt in nts]
