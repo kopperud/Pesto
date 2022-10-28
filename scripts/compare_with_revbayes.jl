@@ -175,8 +175,6 @@ for nt in nts
             append!(df1, [CSV.read("cluster_output/" * filename, DataFrame)])
         end
     end
-#    df1 = CSV.read("cluster_output/bears_BDS_rates_" * string(nt)* "_run_1.log", DataFrame)
-#    df2 = CSV.read("cluster_output/bears_BDS_rates_" * string(nt)* "_run_2.log", DataFrame)
     dfs[nt] = vcat(df1...)
 end
 
@@ -192,7 +190,6 @@ for nt in nts
     l[nt] = ll
 end
 
-#y = hcat(values(l)...)
 y = hcat([l[key] for key in nts]...)
 
 
