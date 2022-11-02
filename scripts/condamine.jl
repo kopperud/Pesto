@@ -81,8 +81,10 @@ for (i, cladename) in enumerate(cladenames)
     else
         labels = ["", ""]
     end
-    h = histogram(br["λ"], label = labels[1], title = cladename, xlab = "Rate", xrotation = 90)
-    histogram!(h, br["μ"], label = labels[2])
+    maxlambda = maximum(br["λ"][.!isnan.(br["λ"])])
+    maxmu = maximum(br["μ"][.!isnan.(br["μ"])])
+    h = histogram(br["λ"], label = labels[1], bins = range(0.0, maxlambda, length = 15), title = cladename, xlab = "Rate", xrotation = 90, xlim = (0.0, 0.6))
+    histogram!(h, br["μ"], bins = range(0.0, maxmu, length = 10), label = labels[2])
 
     #, xlim = (0.0, 1.0)
     hs[cladename] = h    
