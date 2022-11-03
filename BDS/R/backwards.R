@@ -14,7 +14,7 @@
 #' @export
 #'
 #' @examples
-backwards <- function(lambda, mu, eta, tstart, tend, E0, D0, ntimes = 100){
+backwards <- function(lambda, mu, eta, tstart, tend, E0, D0, ntimes){
   k <- length(lambda)
   parameters <- list("lambda" = lambda, "mu" = mu, "eta" = eta, "k" = k)
   yini <- c("E" = E0, "D" = D0)

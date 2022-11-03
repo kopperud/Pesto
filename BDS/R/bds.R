@@ -24,10 +24,9 @@ birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
   mean_mu <- list()
   mean_lambda <- list()
   for (i in 1:n_edges){
-    Em <- dplyr::select(x$forwards[[i]], starts_with("E")) %>% as.matrix()
-    Dm <- dplyr::select(x$forwards[[i]], starts_with("D")) %>% as.matrix()
-    Fm <- dplyr::select(x$forwards[[i]], starts_with("F")) %>% as.matrix()
-
+    Em <- dplyr::select(x$forward[[i]], starts_with("E")) %>% as.matrix()
+    Dm <- dplyr::select(x$forward[[i]], starts_with("D")) %>% as.matrix()
+    Fm <- dplyr::select(x$forward[[i]], starts_with("F")) %>% as.matrix()
 
     Pm = (Fm * Dm) / (rowSums(Fm * Dm))
 

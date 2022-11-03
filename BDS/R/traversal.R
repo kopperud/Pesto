@@ -17,8 +17,10 @@ traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = F
     num_branches <- length(phy$edge.length)
 
     forward_results <- list()
+    backward_results <- list()
 
     D_ends <- matrix(0, nrow = num_branches, ncol = k)
+    D_ends_unnormalized <- matrix(0, nrow = num_branches, ncol = k)
     E_ends <- matrix(0, nrow = num_branches, ncol = k)
 
     sf <- matrix(0, nrow = num_branches, ncol = 1)
@@ -51,7 +53,7 @@ traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = F
           E_start <- array(0,k)
       }
 
-      tmp_res <- backwards(lambda, mu, eta, tstart = 0, tend = bl, E_start, D_start, ntimes = 100)
+      tmp_res <- backwards(lambda, mu, eta, tstart = 0, tend = bl, E_start, D_start, ntimes = ntimes)
       D_end <- tmp_res %>%
         dplyr::select(dplyr::starts_with("D")) %>%
         tail(n = 1) %>%
@@ -62,7 +64,10 @@ traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = F
         tail(n = 1) %>%
         unlist()
 
+      backward_results[[i]] <- tmp_res
+
       sf[i,] <- log(sum(D_end)) ## add the scaling factor
+      D_ends_unnormalized[i,] <- D_end
       D_end <- D_end / (sum(D_end))
       D_ends[i,] <- D_end
     }
@@ -114,15 +119,17 @@ traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = F
 
         F_start <- F_ends[parent_edge,] * lambda * D_ends[other_child,]
 
-        ## Normalize
-        F_start <- F_start / sum(F_start)
-      }
 
-      D_start <- D_ends[i,]
+      }
+      ## Normalize
+      #F_start <- F_start / sum(F_start)
+
+      D_start <- D_ends_unnormalized[i,]
       E_start <- E_ends[i,]
 
 
-      tmp_res <- forwards(lambda, mu, eta, tstart = 0, tend = -bl, E_start, D_start, F_start, ntimes = 100)
+      tmp_res <- forwards(lambda, mu, eta, tstart = 0, tend = bl, E_start, D_start, F_start, ntimes = ntimes)
+
       forward_results[[i]] <- tmp_res
 
       F_ends[i,] <- tmp_res %>%
@@ -143,24 +150,17 @@ traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = F
         }
         ASP[node - length(phy$tip.label),] <- ASP[node - length(phy$tip.label),] / sum(ASP[node - length(phy$tip.label),])
       }
+
     }
 
-#       x <- seq(0, bl, length.out = STEPS+1)
-#       df1 <- dplyr::tibble("time" = x,
-#                    "F" = tmp_res$F[1,],
-#                    "state" = "1")
-#       df2 <- dplyr::tibble("time" = x,
-#                    "F" = tmp_res$F[2,],
-#                    "state" = "2")
-#       df <- dplyr::bind_rows(df1, df2)
-#       p <- ggplot2::ggplot(df, ggplot2::aes(x = time, y = F, linetype = state)) +
-#                   ggplot2::geom_line()
-#       ggplot2::ggsave("figures/tmp.pdf", p)
+
 
 
     res <- list(
       "ASP" = ASP,
-      "forwards" = forward_results
+      "forward" = forward_results,
+      "backward_results" = backward_results,
+      "root_probs" = root_probs
     )
     return(res)
 }
