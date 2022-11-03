@@ -1,12 +1,13 @@
-source("scripts/ODE.branch.backwards.R")
-source("scripts/ODE.branch.forwards.R")
-source("scripts/ODE.node.R")
-source("scripts/ODE.SCM.R")
-source("scripts/ODE.BiSSE.R")
-source("scripts/ODE.branch.backwards.rk4.R")
+# source("scripts/ODE.branch.backwards.R")
+# source("scripts/ODE.branch.forwards.R")
+# source("scripts/ODE.node.R")
+# source("scripts/ODE.SCM.R")
+# source("scripts/ODE.BiSSE.R")
+# source("scripts/ODE.branch.backwards.rk4.R")
 
 #library(deSolve)
 
+library(BDS)
 
 STEPS <- 10000
 
@@ -15,18 +16,19 @@ mu     <- c(0.5,0.1)
 eta    <- 0.1
 k      <- length(lambda)
 
+setwd("~/projects/BDS_deterministic_map/")
 
 if (F){
-  treefile <- "data/test.tre"  
+  treefile <- "data/test.tre"
   datafile <- "data/test.csv"
   phy <- read.tree(treefile)
 }else{
   treefile <- "data/bears.tre"
   datafile <- "data/bears.csv"
-  phy <- read.nexus(treefile)  
+  phy <- read.nexus(treefile)
 }
- 
- # treefile <- "data/fourtaxon.tre"  
+
+ # treefile <- "data/fourtaxon.tre"
  # datafile <- "data/fourtaxon.csv"
  # phy <- read.tree(treefile)
 
@@ -37,12 +39,6 @@ df <- df[match(phy$tip.label, df$Taxon), ]
 for (i in 1:length(phy$tip.label)){
   D_inits[phy$edge[,2] == i, df$state[i]+1] <- 1
 }
-
-# branch_lengths <- c( 1.0, 1.0, 2.0, 1.0 )
-# parents <- c( 4, 4, NA, NA )
-# D_inits <- c( 0, 1, 0, 1, 0, 1 )
-# dim(D_inits) <- c(3,k)
-
 
 cat("\n")
 cat("Testing marginal node state probability estimation\n")
@@ -61,41 +57,10 @@ cat("\n")
 cat("\n")
 cat("Ancestral state algorithm (BiSSE)\n")
 results_ace_bisse <- anc.state.prob.bisse(phy, datafile, lambda, mu, eta)
-#cat("State probabilities at root:\t\t",results_ace_bisse$root,"\n")
-#cat("State probabilities at node:\t\t",results_ace_bisse$node,"\n")
 print(results_ace_bisse)
-
-
-
-#cat("\n")
-#cat("Ancestral state algorithm\n")
-#results_ace <- ancestral.state.probs(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS)
-#cat("State probabilities at node:\t\t",results_ace,"\n")
-
-
-
-
-#results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "A")
-#
-#cat("Stochastic character mapping (A)\n")
-#cat("State probabilities at root:\t\t",results_scm$root,"\n")
-#cat("State probabilities at node:\t\t",results_scm$node,"\n")
-#
-
-
 
 
 cat("\n")
 cat("Stochastic character mapping (B)\n")
-results_scm <- stochastic.character.mapping(phy, D_inits, lambda, mu, eta, STEPS, "B")
-# cat("State probabilities at root:\t\t",results_scm$root,"\n")
-# cat("State probabilities at node:\t\t",results_scm$node,"\n")
+results_scm <- traversal(phy, D_inits, lambda, mu, eta, STEPS)
 print(results_scm$ASP)
-
-stop(".")
-
-cat("\n")
-cat("Stochastic character mapping (C)\n")
-results_scm <- stochastic.character.mapping(branch_lengths, parents, D_inits, lambda, mu, eta, STEPS, "C")
-cat("State probabilities at root:\t\t",results_scm$root,"\n")
-cat("State probabilities at node:\t\t",results_scm$node,"\n")
