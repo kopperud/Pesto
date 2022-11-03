@@ -1,12 +1,5 @@
-# source("scripts/ODE.branch.backwards.R")
-# source("scripts/ODE.branch.forwards.R")
-# source("scripts/ODE.node.R")
-# source("scripts/ODE.SCM.R")
-# source("scripts/ODE.BiSSE.R")
-# source("scripts/ODE.branch.backwards.rk4.R")
-
-#library(deSolve)
-
+library(ape)
+library(diversitree)
 library(BDS)
 
 STEPS <- 10000
@@ -62,5 +55,7 @@ print(results_ace_bisse)
 
 cat("\n")
 cat("Stochastic character mapping (B)\n")
-results_scm <- traversal(phy, D_inits, lambda, mu, eta, STEPS)
+results_scm <- traversal(phy, D_inits, lambda, mu, eta, ntimes = 100)
 print(results_scm$ASP)
+
+res <- birth_death_shift(phy, lambda, mu, eta)

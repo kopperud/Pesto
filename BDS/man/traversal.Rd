@@ -4,10 +4,10 @@
 \alias{traversal}
 \title{Title}
 \usage{
-traversal(phy, D_inits, lambda, mu, eta, STEPS, METHOD)
+traversal(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = FALSE)
 }
 \arguments{
-\item{METHOD}{}
+\item{ntimes}{}
 }
 \value{
 

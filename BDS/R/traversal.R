@@ -123,7 +123,7 @@ traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = F
 
 
       tmp_res <- forwards(lambda, mu, eta, tstart = 0, tend = -bl, E_start, D_start, F_start, ntimes = 100)
-      forward_results[[i]] <- forwards
+      forward_results[[i]] <- tmp_res
 
       F_ends[i,] <- tmp_res %>%
         dplyr::select(dplyr::starts_with("F")) %>%
