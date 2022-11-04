@@ -3,6 +3,7 @@ using Distributions
 using ProgressMeter
 using CSV
 using DataFrames
+using StatsPlots
 
 #### load simulated trees
 fnames = Base.Filesystem.readdir("data/simulated_trees")
@@ -32,11 +33,14 @@ extinction = make_quantiles(d2, n)
 k = n ^2
 λ = zeros(k)
 μ = zeros(k)
+η = 0.1
 
 for (i, (sp, ex)) in enumerate(Iterators.product(speciation, extinction))
     λ[i] = sp
     μ[i] = ex
 end
+
+model = SSEconstant(λ, μ, η)
 
 ## Compute the results
 results = Dict()
@@ -65,6 +69,9 @@ for i in 1:2
 
         for i in 1:length(rdf[:,:ntaxa])
             annotate!(p, rdf[i, :ntaxa], rdf[i, :times], text(rdf[:,:ntaxa][i], 6, :left, :top))
+        end
+        for i in 1:length(jdf[:,:ntaxa])
+            annotate!(p, jdf[i, :ntaxa], jdf[i, :time], text(jdf[:,:ntaxa][i], 6, :left, :top))
         end
     end
     plot!(p, jdf[:, :ntaxa], jdf[:, :time], label = "", color = "black")
