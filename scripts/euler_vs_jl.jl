@@ -29,6 +29,7 @@ datasets = Dict(key => vcat(val...) for (key, val) in ds)
 
 #df = datasets["bears"]
 #dataset = "bears"
+myplots = Dict()
 
 for (dataset, df) in datasets
     sort!(df, :nTimeSlices)
@@ -104,6 +105,8 @@ for (dataset, df) in datasets
         myplot = plot(plots[1:400]..., size = (1500, 8000), layout = (40, 10))
 #        myplot = plot(plots[1:100]..., size = (2000, 2000))
     end
+
+    myplots[dataset] = plots
 
     savefig(myplot, "figures/euler_rb_" * dataset * ".pdf")
 end

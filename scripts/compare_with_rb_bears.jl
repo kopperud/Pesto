@@ -11,7 +11,7 @@ using Diversification
 treefile = "data/bears.tre"
 datafile = "data/bears.csv"
 phy = readtree(treefile)
-N_total_species = 367
+N_total_species = 8
 ρ = N_total_species / length(phy[:tip_label])
 data = make_SSEdata(phy, datafile, ρ; include_traits = false)
 

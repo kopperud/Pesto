@@ -59,3 +59,11 @@ results_scm <- traversal(phy, D_inits, lambda, mu, eta, ntimes = 100)
 print(results_scm$ASP)
 
 res <- birth_death_shift(phy, lambda, mu, eta)
+
+
+## primates
+primates <- read.tree("data/primates.tre")
+
+pr <- birth_death_shift(primates, lambda, mu, eta)
+
+
