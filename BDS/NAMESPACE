@@ -3,3 +3,5 @@
 export(backwards)
 export(birth_death_shift)
 export(traversal)
+importFrom(Rcpp,sourceCpp)
+useDynLib(BDS)

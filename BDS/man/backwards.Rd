@@ -4,7 +4,7 @@
 \alias{backwards}
 \title{Title}
 \usage{
-backwards(lambda, mu, eta, tstart, tend, E0, D0, ntimes = 100)
+backwards(lambda, mu, eta, tstart, tend, E0, D0, ntimes)
 }
 \arguments{
 \item{ntimes}{}
