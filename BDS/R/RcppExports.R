@@ -5,3 +5,11 @@ rcpp_hello_world <- function() {
     .Call('_BDS_rcpp_hello_world', PACKAGE = 'BDS')
 }
 
+rcpp_get_descendants <- function(edge, node_idx) {
+    .Call('_BDS_rcpp_get_descendants', PACKAGE = 'BDS', edge, node_idx)
+}
+
+rcpp_postorder <- function(lambda, mu, eta, po, edge, branch_lengths, rootnode) {
+    .Call('_BDS_rcpp_postorder', PACKAGE = 'BDS', lambda, mu, eta, po, edge, branch_lengths, rootnode)
+}
+
