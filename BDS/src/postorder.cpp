@@ -18,7 +18,8 @@ IntegerVector rcpp_get_descendants(IntegerMatrix edge, int node_idx){
 }
 
 // [[Rcpp::export]]
-int rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerVector po, IntegerMatrix edge, NumericVector branch_lengths, int rootnode) {
+int rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerVector po,
+                   IntegerMatrix edge, NumericVector branch_lengths, int rootnode) {
   int nrow = edge.nrow();
   int nsols = 100; // solutions per branch
 
@@ -63,14 +64,15 @@ int rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerVe
         D_start.push_front(1.0);
         E_start.push_front(0.0);
       }
-      // Rprintf("%f %f %f \n", D_start[0], D_start[1], D_start[2]);
+      //Rprintf("%f %f \n", D_start[0], D_start[1]);
     }
 
   // solve the ODE here
   // tmp_res <- backwards(lambda, mu, eta, tstart = 0, tend = bl, E_start, D_start, ntimes = ntimes)
 
 
-    Rprintf("Anc: %i, \t dec: %i \t bl: %f \n", anc, dec, bl);
+
+    Rprintf("Anc: %i \t dec: %i \t bl: %f \n", anc, dec, bl);
   }
 
   return 0;

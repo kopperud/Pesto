@@ -60,14 +60,14 @@ birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
 #'
 #' @examples
 #'
-#' data(primates)
+#' data(bears)
 #'
 #' lambda <- c(0.1, 0.2)
 #' mu <- c(0.05, 0.15)
 #'
 #' eta <- 0.05
 #'
-#' res <- birth_death_shift2(primates, lambda, mu, eta)
+#' res <- birth_death_shift2(bears, lambda, mu, eta)
 birth_death_shift2 <- function(phy, lambda, mu, eta, ntimes = 100){
   branch_lengths <- phy$edge.length
   edge <- phy$edge
