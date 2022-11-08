@@ -5,6 +5,10 @@ rcpp_hello_world <- function() {
     .Call('_BDS_rcpp_hello_world', PACKAGE = 'BDS')
 }
 
+rcpp_backwards <- function(lambda, mu, eta, u0, bl, nsteps) {
+    .Call('_BDS_rcpp_backwards', PACKAGE = 'BDS', lambda, mu, eta, u0, bl, nsteps)
+}
+
 rcpp_get_descendants <- function(edge, node_idx) {
     .Call('_BDS_rcpp_get_descendants', PACKAGE = 'BDS', edge, node_idx)
 }
