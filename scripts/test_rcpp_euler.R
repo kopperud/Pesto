@@ -17,7 +17,7 @@ dfs <- list()
 for (dataset_name in names(datasets)){
   phy <- datasets[[dataset_name]]
 
-  step_sizes <- seq(100, 5000, length.out = 20)
+  step_sizes <- floor(seq(100, 5000, length.out = 20))
   logLs <- list()
   times <- list()
   for (i in seq_along(step_sizes)){
@@ -71,7 +71,7 @@ library(patchwork)
 
 p <- p1 / p2
 
-ggsave("../figures/rcpp_euler_vs_jl.pdf", units = "mm", height = 120, width = 120)
+ggsave("../figures/rcpp_euler_vs_jl.pdf", units = "mm", height = 200, width = 200)
 
 
 plot(step_sizes, unlist(logLs))
@@ -94,4 +94,9 @@ for (i in seq_along(step_sizes)){
   time1 <- Sys.time()
   times[[i]] <- time2 - time1
 }
+
+##
+
+
+
 

@@ -60,6 +60,7 @@ birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
 
 #' @inherit birth_death_shift
 #'
+#' @export
 #' @examples
 #' library(BDS)
 #' library(ape)

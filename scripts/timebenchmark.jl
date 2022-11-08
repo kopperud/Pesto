@@ -68,7 +68,7 @@ for i in 1:2
         plot!(p, xscale = :log10, yscale = :log10, title = "Log-scale")
 
         for i in 1:length(rdf[:,:ntaxa])
-            annotate!(p, rdf[i, :ntaxa], rdf[i, :times], text(rdf[:,:ntaxa][i], 6, :left, :top))
+            annotate!(p, rdf[i, :ntaxa], rdf[i, :tnativeR], text(rdf[:,:ntaxa][i], 6, :left, :top))
         end
         for i in 1:length(jdf[:,:ntaxa])
             annotate!(p, jdf[i, :ntaxa], jdf[i, :time], text(jdf[:,:ntaxa][i], 6, :left, :top))
@@ -77,9 +77,14 @@ for i in 1:2
     plot!(p, jdf[:, :ntaxa], jdf[:, :time], label = "", color = "black")
     scatter!(p, jdf[:, :ntaxa], jdf[:, :time], label = "Julia", color = "black")
 
-    ## R
-    plot!(p, rdf[:, :ntaxa], rdf[:, :times], label = "", color = "orange")
-    scatter!(p, rdf[:, :ntaxa], rdf[:, :times], label = "R", color = "orange")
+    ## R native
+    plot!(p, rdf[:, :ntaxa], rdf[:, :tnativeR], label = "", color = "orange")
+    scatter!(p, rdf[:, :ntaxa], rdf[:, :tnativeR], label = "R", color = "orange")
+
+    ## Rcpp
+    plot!(p, rdf[:, :ntaxa], rdf[:, :tRcpp], label = "", color = "green")
+    scatter!(p, rdf[:, :ntaxa], rdf[:, :tRcpp], label = "Rcpp (postorder)", color = "green")
+
 
     append!(ps, [p])
 end
