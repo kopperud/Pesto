@@ -157,7 +157,7 @@ List rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerV
 
     D_ends(edge_idx, _) = D_end;
 
-    Rprintf("Anc: %i \t dec: %i \t bl: %f \n", anc, dec, bl);
+    //Rprintf("Anc: %i \t dec: %i \t bl: %f \n", anc, dec, bl);
   }
 
   // root states
@@ -190,7 +190,7 @@ List rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerV
   logL += log(tmp);
   logL += sum(sf);
 
-  Rprintf("logL: %f \n", logL);
+  //Rprintf("logL: %f \n", logL);
 
   List res;
   res["logL"] = logL;
