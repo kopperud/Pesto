@@ -12,7 +12,7 @@
 #'
 #' @examples
 traversal <- function(phy, D_inits, lambda, mu, eta, ntimes = 100, printlogL = FALSE) {
-    po <- postorder(phy)
+    po <- ape::postorder(phy)
     k <- length(lambda)
     num_branches <- length(phy$edge.length)
 

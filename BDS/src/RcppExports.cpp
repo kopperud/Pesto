@@ -49,8 +49,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // rcpp_postorder
-int rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerVector po, IntegerMatrix edge, NumericVector branch_lengths, int rootnode);
-RcppExport SEXP _BDS_rcpp_postorder(SEXP lambdaSEXP, SEXP muSEXP, SEXP etaSEXP, SEXP poSEXP, SEXP edgeSEXP, SEXP branch_lengthsSEXP, SEXP rootnodeSEXP) {
+List rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerVector po, IntegerMatrix edge, NumericVector branch_lengths, int rootnode, int nsteps);
+RcppExport SEXP _BDS_rcpp_postorder(SEXP lambdaSEXP, SEXP muSEXP, SEXP etaSEXP, SEXP poSEXP, SEXP edgeSEXP, SEXP branch_lengthsSEXP, SEXP rootnodeSEXP, SEXP nstepsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -61,7 +61,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< IntegerMatrix >::type edge(edgeSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type branch_lengths(branch_lengthsSEXP);
     Rcpp::traits::input_parameter< int >::type rootnode(rootnodeSEXP);
-    rcpp_result_gen = Rcpp::wrap(rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode));
+    Rcpp::traits::input_parameter< int >::type nsteps(nstepsSEXP);
+    rcpp_result_gen = Rcpp::wrap(rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -70,7 +71,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BDS_rcpp_hello_world", (DL_FUNC) &_BDS_rcpp_hello_world, 0},
     {"_BDS_rcpp_backwards", (DL_FUNC) &_BDS_rcpp_backwards, 6},
     {"_BDS_rcpp_get_descendants", (DL_FUNC) &_BDS_rcpp_get_descendants, 2},
-    {"_BDS_rcpp_postorder", (DL_FUNC) &_BDS_rcpp_postorder, 7},
+    {"_BDS_rcpp_postorder", (DL_FUNC) &_BDS_rcpp_postorder, 8},
     {NULL, NULL, 0}
 };
 

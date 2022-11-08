@@ -11,14 +11,16 @@
 #'
 #' @examples
 #'
-#' data(primates)
+#' library(BDS)
+#'
+#' data(bears)
 #'
 #' lambda <- c(0.1, 0.2)
 #' mu <- c(0.05, 0.15)
 #'
 #' eta <- 0.05
 #'
-#' res <- birth_death_shift(primates, lambda, mu, eta)
+#' res <- birth_death_shift(bears, lambda, mu, eta)
 birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
   k <- length(lambda)
 
@@ -59,6 +61,8 @@ birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
 #' @inherit birth_death_shift
 #'
 #' @examples
+#' library(BDS)
+#' library(ape)
 #'
 #' data(bears)
 #'
@@ -71,8 +75,8 @@ birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
 birth_death_shift2 <- function(phy, lambda, mu, eta, ntimes = 100){
   branch_lengths <- phy$edge.length
   edge <- phy$edge
-  po <- postorder(phy)
+  po <- ape::postorder(phy)
   rootnode <- length(phy$tip.label)
 
-  res <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode)
+  res <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, ntimes)
 }

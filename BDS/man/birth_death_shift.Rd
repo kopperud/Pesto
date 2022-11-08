@@ -25,12 +25,14 @@ Title
 }
 \examples{
 
-data(primates)
+library(BDS)
+
+data(bears)
 
 lambda <- c(0.1, 0.2)
 mu <- c(0.05, 0.15)
 
 eta <- 0.05
 
-res <- birth_death_shift(primates, lambda, mu, eta)
+res <- birth_death_shift(bears, lambda, mu, eta)
 }

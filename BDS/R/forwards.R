@@ -6,7 +6,7 @@ forwards <- function(lambda, mu, eta, tstart, tend, E0, D0, F0, ntimes){
   times <- seq(tstart, tend, length.out = ntimes)
   out <- deSolve::rk4(y = yini, times = times, func = forwardsEDF, parms = parameters)
 
-  res <- as_tibble(apply(out, 2, function(l) l, simplify = FALSE))
+  res <- tibble::as_tibble(apply(out, 2, function(l) l, simplify = FALSE))
   return(res)
 }
 

@@ -24,6 +24,8 @@ birth_death_shift2(phy, lambda, mu, eta, ntimes = 100)
 Title
 }
 \examples{
+library(BDS)
+library(ape)
 
 data(bears)
 
