@@ -2,12 +2,13 @@
 //#include "./backwards.cpp"
 using namespace Rcpp;
 
-NumericVector ED_ode(NumericVector y,
+void ED_ode(NumericVector dy,
+                     NumericVector y,
                      NumericVector lambda,
                      NumericVector mu,
                      double eta,
                      int k){
-  NumericVector dy(2*k);
+  //NumericVector dy(2*k);
 
   for (int i = 0; i < k; i++){
     // Extinction prob
@@ -30,7 +31,7 @@ NumericVector ED_ode(NumericVector y,
       dy[k+i] += (eta / (k-1)) * tmpD;
     }
   }
-  return dy;
+  //return dy;
 }
 
 // Solving the ODE using Euler's method, fixed time step
@@ -52,14 +53,15 @@ NumericMatrix rcpp_backwards(NumericVector lambda,
     y(0, i) = u0[i];
   }
 
-  // NumericVector dy;
+  NumericVector dy(2*k);
 
   for (int m = 1; m < nsteps; m++){
     // Euler's formula:
     // y_{n+1} = y_n + dt * f(y_n, t_n)
     NumericVector y_current = y(m-1, _);
     // dy =
-    y(m, _) = y_current + dt * ED_ode(y_current, lambda, mu, eta, k);
+    ED_ode(dy, y_current, lambda, mu, eta, k); // updates dy
+    y(m, _) = y_current + dt * dy;
   }
   return y;
 }

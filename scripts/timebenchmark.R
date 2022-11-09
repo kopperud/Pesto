@@ -44,7 +44,6 @@ for (i in seq_along(ntaxa)){
 
 ## Test how much time we need to execute program
 times1 <- list()
-times2 <- list()
 for (i in seq_along(phys)){
   if (ntaxa[i] < 300){
     t1 <- Sys.time()
@@ -53,7 +52,13 @@ for (i in seq_along(phys)){
     cat(".")
 
     times1[[i]] <- t2 - t1
+  }
+};cat("\n")
 
+
+times2 <- list()
+for (i in seq_along(phys)){
+  if (ntaxa[i] < 300){
     ## RCPP implementation (postorder+logL only)
     t1 <- Sys.time()
     res <- birth_death_shift2(phys[[i]], lambda, mu, eta)
@@ -63,6 +68,7 @@ for (i in seq_along(phys)){
     times2[[i]] <- t2 - t1
   }
 };cat("\n")
+
 
 df <- tibble("tnativeR" = unlist(times1),
              "tRcpp" = unlist(times2),
