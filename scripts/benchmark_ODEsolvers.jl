@@ -35,13 +35,20 @@ euler_times = []
 dts = [0.1^n for n in 1:6]
 for dt in dts
     prob = ODEProblem(f,u0,tspan,p, dt = dt)
-    euler_time = @elapsed solve(prob, Euler())
+    ts = []
+    for i in 1:3
+        euler_time = @elapsed solve(prob, Euler())
+        append!(ts, euler_time)
+    end
+    euler_time = minimum(ts)
     euler_sol = solve(prob, Euler())
     append!(eulers, [euler_sol])
     append!(euler_times, euler_time)
 end
 
-euler_errors = [sum(abs.(e.u[end] - sol.u[end])) for e in eulers]
+#euler_errors = [sum(abs.(e.u[end] - sol.u[end])) for e in eulers]
+euler_errors = [LinearAlgebra.norm(Statistics.mean(e.u .- sol.(e.t))) for e in eulers]
+#euler_errors = [LinearAlgebra.norm(Statistics.mean(e.(sol.t) .- sol.u)) for e in eulers]
 
 
 
@@ -54,7 +61,11 @@ setups = [
           Dict(:prob_choice => 2, :alg=>DP5())
           Dict(:prob_choice => 2, :alg=>Tsit5())
           Dict(:prob_choice => 2, :alg=>Vern7())
+          Dict(:prob_choice => 2, :alg=>RK4())
           Dict(:alg=>dopri5())
+          Dict(:alg=>ODEInterfaceDiffEq.dop853())
+          Dict(:alg=>ODEInterfaceDiffEq.radau5())
+          Dict(:alg=>ODEInterfaceDiffEq.rodas())
 #          Dict(:alg=>MATLABDiffEq.ode45())
 #          Dict(:alg=>MATLABDiffEq.ode113())
           Dict(:alg=>SciPyDiffEq.RK45())
@@ -62,7 +73,9 @@ setups = [
           Dict(:alg=>SciPyDiffEq.odeint())
           Dict(:alg=>deSolveDiffEq.lsoda())
           Dict(:alg=>deSolveDiffEq.ode45())
+          Dict(:alg=>deSolveDiffEq.radau())
           Dict(:alg=>CVODE_Adams())
+          Dict(:alg=>CVODE_BDF())
   ]
 
 labels = [
@@ -73,7 +86,11 @@ labels = [
   "Julia: DP5 Static"
   "Julia: Tsit5 Static"
   "Julia: Vern7 Static"
+  "Julia: RK4 Static"
   "Hairer: dopri5"
+  "Hairer: dop853"
+  "Hairer: radau5"
+  "Hairer: rodas"
 #  "MATLAB: ode45"
 #  "MATLAB: ode113"
   "SciPy: RK45"
@@ -81,7 +98,9 @@ labels = [
   "SciPy: odeint"
   "deSolve: lsoda"
   "deSolve: ode45"
+  "deSolve: radau"
   "Sundials: Adams"
+  "Sundials: BDF"
   ]
 
 abstols = 1.0 ./ 10.0 .^ (6:13)
@@ -95,16 +114,16 @@ benchmark_plot = plot(wp,
                       title="E(t). λ = [0.1, 0.2], μ = [0.05, 0.15], η = 0.05, from t₀=0.0 to tₕ = 10.0",
                       legend=:outertopleft,
                       color=permutedims([repeat([:LightGreen],4)...,
-                                         repeat([:DarkGreen],3)...,
-                                         :Red,
+                                         repeat([:DarkGreen],4)...,
+                                         repeat([:Red], 4)...,
                                          #repeat([:Orange],2)...,
                                          repeat([:Yellow],3)...,
-                                         repeat([:Blue],2)...,
-                                         :Purple]),
+                                         repeat([:Blue],3)...,
+                                         repeat([:Purple],2)...]),
                       size = (1400,650),
                       legendfontsize = 15,
          xticks = 10.0 .^ (-12:1:5),
-     yticks = 10.0 .^ (-6:0.5:5),
+         yticks = (10.0 .^ (-5.5:0.5:2), ["3.2 µs", "10 µs", "32 µs", "100 µs", "316 µs", "1 ms", "32 ms", "100 ms", "316 ms", "1s", "3.2 s", "10 s", "32 s"]),
      bottom_margin = 5Plots.mm)
 
 plot!(benchmark_plot, euler_errors, euler_times, label = "", color = "black")
@@ -112,6 +131,8 @@ scatter!(benchmark_plot, euler_errors, euler_times, label = "Euler's method", co
 for i in 1:length(dts)
     annotate!(benchmark_plot, euler_errors[i], euler_times[i], text("dt = 0.1^"*string(i), 10, :right ,:top))
 end
+
+#plot!(benchmark_plot, xflip = true)
 
 
 savefig(benchmark_plot, "figures/benchmark_odesolvers.pdf")

@@ -9,11 +9,23 @@ rcpp_backwards <- function(lambda, mu, eta, u0, bl, nsteps) {
     .Call('_BDS_rcpp_backwards', PACKAGE = 'BDS', lambda, mu, eta, u0, bl, nsteps)
 }
 
+rcpp_forwards <- function(lambda, mu, eta, u0, bl, nsteps) {
+    .Call('_BDS_rcpp_forwards', PACKAGE = 'BDS', lambda, mu, eta, u0, bl, nsteps)
+}
+
 rcpp_get_descendants <- function(edge, node_idx) {
     .Call('_BDS_rcpp_get_descendants', PACKAGE = 'BDS', edge, node_idx)
 }
 
+rcpp_get_ancestor <- function(edge, node_idx) {
+    .Call('_BDS_rcpp_get_ancestor', PACKAGE = 'BDS', edge, node_idx)
+}
+
 rcpp_postorder <- function(lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps) {
     .Call('_BDS_rcpp_postorder', PACKAGE = 'BDS', lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps)
+}
+
+rcpp_preorder <- function(lambda, mu, eta, po, edge, branch_lengths, root_probs, E_ends, D_ends, D_ends_unnormalized, rootnode, nsteps) {
+    .Call('_BDS_rcpp_preorder', PACKAGE = 'BDS', lambda, mu, eta, po, edge, branch_lengths, root_probs, E_ends, D_ends, D_ends_unnormalized, rootnode, nsteps)
 }
 

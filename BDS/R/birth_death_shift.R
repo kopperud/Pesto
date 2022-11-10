@@ -73,11 +73,28 @@ birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
 #' eta <- 0.05
 #'
 #' res <- birth_death_shift2(bears, lambda, mu, eta)
-birth_death_shift2 <- function(phy, lambda, mu, eta, ntimes = 100){
+birth_death_shift2 <- function(phy, lambda, mu, eta, nsteps = 100){
   branch_lengths <- phy$edge.length
   edge <- phy$edge
   po <- ape::postorder(phy)
   rootnode <- length(phy$tip.label)
 
-  res <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, ntimes)
+  res <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps)
+
+  E_ends <- res[["E_ends"]]
+  D_ends <- res[["D_ends"]]
+  D_ends_unnormalized <- res[["D_ends_unnormalized"]]
+  root_probs <- res[["root_probs"]]
+
+  forw <- rcpp_preorder(lambda, mu, eta, po,
+                        edge,
+                        branch_lengths,
+                        root_probs,
+                        E_ends,
+                        D_ends,
+                        D_ends_unnormalized,
+                        rootnode,
+                        nsteps )
+
+  return(forw)
 }
