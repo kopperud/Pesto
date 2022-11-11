@@ -10,14 +10,34 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// rcpp_hello_world
-List rcpp_hello_world();
-RcppExport SEXP _BDS_rcpp_hello_world() {
+// ED_ode
+void ED_ode(NumericVector dy, NumericVector y, NumericVector lambda, NumericVector mu, double eta, int k);
+RcppExport SEXP _BDS_ED_ode(SEXP dySEXP, SEXP ySEXP, SEXP lambdaSEXP, SEXP muSEXP, SEXP etaSEXP, SEXP kSEXP) {
 BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcpp_hello_world());
-    return rcpp_result_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type dy(dySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< double >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    ED_ode(dy, y, lambda, mu, eta, k);
+    return R_NilValue;
+END_RCPP
+}
+// EDF_ode
+void EDF_ode(NumericVector dy, NumericVector y, NumericVector lambda, NumericVector mu, double eta, int k);
+RcppExport SEXP _BDS_EDF_ode(SEXP dySEXP, SEXP ySEXP, SEXP lambdaSEXP, SEXP muSEXP, SEXP etaSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type dy(dySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< double >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< int >::type k(kSEXP);
+    EDF_ode(dy, y, lambda, mu, eta, k);
+    return R_NilValue;
 END_RCPP
 }
 // rcpp_backwards
@@ -118,7 +138,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_BDS_rcpp_hello_world", (DL_FUNC) &_BDS_rcpp_hello_world, 0},
+    {"_BDS_ED_ode", (DL_FUNC) &_BDS_ED_ode, 6},
+    {"_BDS_EDF_ode", (DL_FUNC) &_BDS_EDF_ode, 6},
     {"_BDS_rcpp_backwards", (DL_FUNC) &_BDS_rcpp_backwards, 6},
     {"_BDS_rcpp_forwards", (DL_FUNC) &_BDS_rcpp_forwards, 6},
     {"_BDS_rcpp_get_descendants", (DL_FUNC) &_BDS_rcpp_get_descendants, 2},

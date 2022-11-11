@@ -79,12 +79,12 @@ birth_death_shift2 <- function(phy, lambda, mu, eta, nsteps = 100){
   po <- ape::postorder(phy)
   rootnode <- length(phy$tip.label)
 
-  res <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps)
+  back <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps)
 
-  E_ends <- res[["E_ends"]]
-  D_ends <- res[["D_ends"]]
-  D_ends_unnormalized <- res[["D_ends_unnormalized"]]
-  root_probs <- res[["root_probs"]]
+  E_ends <- back[["E_ends"]]
+  D_ends <- back[["D_ends"]]
+  D_ends_unnormalized <- back[["D_ends_unnormalized"]]
+  root_probs <- back[["root_probs"]]
 
   forw <- rcpp_preorder(lambda, mu, eta, po,
                         edge,
@@ -96,5 +96,14 @@ birth_death_shift2 <- function(phy, lambda, mu, eta, nsteps = 100){
                         rootnode,
                         nsteps )
 
-  return(forw)
+  F_ends <- forw[["F_ends"]]
+
+  res <- list(
+    "E_ends" = E_ends,
+    "D_ends" = D_ends,
+    "F_ends" = F_ends,
+    "root_probs" = root_probs
+  )
+
+  return(res)
 }

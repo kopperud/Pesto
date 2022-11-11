@@ -1,13 +1,14 @@
 #include <Rcpp.h>
-//#include "./backwards.cpp"
+#include "ODE.h"
 using namespace Rcpp;
 
+// [[Rcpp::export]]
 void ED_ode(NumericVector dy,
-                     NumericVector y,
-                     NumericVector lambda,
-                     NumericVector mu,
-                     double eta,
-                     int k){
+            NumericVector y,
+            NumericVector lambda,
+            NumericVector mu,
+            double eta,
+            int k){
   //NumericVector dy(2*k);
 
   for (int i = 0; i < k; i++){
@@ -34,12 +35,13 @@ void ED_ode(NumericVector dy,
   //return dy;
 }
 
+// [[Rcpp::export]]
 void EDF_ode(NumericVector dy,
-            NumericVector y,
-            NumericVector lambda,
-            NumericVector mu,
-            double eta,
-            int k){
+             NumericVector y,
+             NumericVector lambda,
+             NumericVector mu,
+             double eta,
+             int k){
   //NumericVector dy(2*k);
 
   for (int i = 0; i < k; i++){
@@ -253,7 +255,6 @@ List rcpp_postorder(NumericVector lambda, NumericVector mu, double eta, IntegerV
 
     //Rprintf("Anc: %i \t dec: %i \t bl: %f \n", anc, dec, bl);
   }
-
   // root states
   IntegerVector root_children = rcpp_get_descendants(edge, rootnode+1);
 
@@ -312,37 +313,32 @@ List rcpp_preorder(NumericVector lambda,
   int nrow = edge.nrow();
   int k = lambda.length();
 
-  Rprintf("asd1\n");
   int left_root_edge = rcpp_get_descendants(edge, rootnode+1)[0];
-  Rprintf("asd2\n");
   NumericVector E_start(k);
   for (int i = 0; i < k; i++){
-    Rprintf("left_root_edge: %i \n", left_root_edge);
     E_start[i] = E_ends(left_root_edge, i);
   }
-  Rprintf("asd3 \n");
-
+  // ############################
+  //
+  //        PREORDER
+  //
+  // ############################
   NumericMatrix F_ends(nrow, k);
-  Rprintf("asd4 \n");
-  Rprintf("nrow: %i\n", nrow);
 
-  //NumericVector preo = rev(po);
   for (int idx = edge.nrow(); idx > 0; idx--){
     int edge_idx = po[idx-1]-1;
 
-    Rprintf("edge idx: %i \n", edge_idx);
+    //Rprintf("edge idx: %i \n", edge_idx);
     int parent = edge(edge_idx, 0);
     int child = edge(edge_idx, 1);
     double bl = branch_lengths[edge_idx];
-    Rprintf("parent: %i \t child: %i \n", parent, child);
-    Rprintf("jad\n");
+    // Rprintf("parent: %i \t child: %i \n", parent, child);
 
-    NumericVector F_start;
+    NumericVector F_start(k);
 
     if (parent == rootnode+1){
       IntegerVector root_children = rcpp_get_descendants(edge, rootnode+1);
 
-      Rprintf("jooo\n");
       int other_child;
       for (int i = 0; i < 2; i++){
         int root_child = root_children[i];
@@ -350,11 +346,9 @@ List rcpp_preorder(NumericVector lambda,
         if (root_child != child){
           other_child = root_children[i];
         }
-        Rprintf("joodskdo. other_child: %i \n", other_child);
         F_start = D_ends(other_child, _) * lambda;
       }
     }else{
-      Rprintf("udiaud\n");
       int parent_edge = rcpp_get_ancestor(edge, parent);
 
       IntegerVector children = rcpp_get_descendants(edge, parent)-1;
@@ -369,8 +363,10 @@ List rcpp_preorder(NumericVector lambda,
     }
 
 
-    NumericVector E_start = E_ends(edge_idx, _);
-    NumericVector D_start = D_ends_unnormalized(edge_idx, _);
+    NumericVector E_start(k);
+    E_start = E_ends(edge_idx, _);
+    NumericVector D_start(k);
+    D_start = D_ends_unnormalized(edge_idx, _);
 
     NumericVector u0(2*k);
     for (int i = 0; i < k; i++){
@@ -378,17 +374,14 @@ List rcpp_preorder(NumericVector lambda,
       u0[i+k] = D_start[i];
       u0[i+2*k] = F_start[i];
     }
-    Rprintf("asd1\n");
-    //tmp_res <- forwards(lambda, mu, eta, tstart = 0, tend = bl, E_start, D_start, F_start, ntimes = ntimes)
+    // Solve the ODE
     NumericMatrix y = rcpp_forwards(lambda, mu, eta, u0, bl, nsteps);
     NumericVector yfinal = y(nsteps-1, _);
-    Rprintf("asd2\n");
-    NumericVector F_end;
+    NumericVector F_end(k);
     for (int i = 0; i < k; i++){
       F_end[i] = yfinal[2*k + i];
     }
 
-    Rprintf("asd3\n");
     // Normalize F
     double fsum = 0.0;
     for (int i = 0; i < k; i++){
@@ -397,12 +390,9 @@ List rcpp_preorder(NumericVector lambda,
     for (int i = 0; i < k; i++){
       F_end[i] = F_end[i] / fsum;
     }
-
     // Store result
-    F_ends(edge_idx, _) = F_ends;
-
+    F_ends(edge_idx, _) = F_end;
   }
-  Rprintf("asd5\n");
 
   List res;
   res["F_ends"] = F_ends;
