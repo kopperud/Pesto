@@ -2,6 +2,9 @@
 
 export(backwards)
 export(birth_death_shift)
+export(birth_death_shift2)
+export(birth_death_shift3)
 export(traversal)
+export(treeprecompute)
 importFrom(Rcpp,sourceCpp)
 useDynLib(BDS)

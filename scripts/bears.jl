@@ -20,10 +20,10 @@ data = make_SSEdata(phy, datafile, ρ; include_traits = false)
 ##   Set up the model
 ##
 ###############################
-λ = [0.05, 0.1, 0.15, 0.2]
-μ = 0.5 .* λ
+λ = [0.1, 0.2]
+μ = [0.05, 0.15]
 
-η = 0.1
+η = 0.05
 model = SSEconstant(λ, μ, η)
 
 

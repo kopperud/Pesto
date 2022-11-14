@@ -4,7 +4,7 @@
 \alias{birth_death_shift2}
 \title{Title}
 \usage{
-birth_death_shift2(phy, lambda, mu, eta, ntimes = 100)
+birth_death_shift2(phy, lambda, mu, eta, nsteps = 100)
 }
 \arguments{
 \item{phy}{an object of class phylo}
@@ -14,8 +14,6 @@ birth_death_shift2(phy, lambda, mu, eta, ntimes = 100)
 \item{mu}{vector of extinction rates}
 
 \item{eta}{the (common) rate of change between state i and state j. A scalar}
-
-\item{ntimes}{number of solutions provided by the ODE solver for each branch}
 }
 \value{
 
