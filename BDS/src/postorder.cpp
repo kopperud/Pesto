@@ -458,14 +458,14 @@ List rcpp_preorder(NumericVector lambda,
     if (parent == rootnode+1){
       IntegerVector root_children = rcpp_get_descendants(edge, rootnode+1);
 
-      int other_child;
+      int sister_edge;
       for (int i = 0; i < 2; i++){
         int root_child = root_children[i];
 
         if (root_child != child){
-          other_child = root_children[i];
+          sister_edge = root_children[i];
         }
-        F_start = D_ends(other_child, _) * lambda;
+        F_start = D_ends(sister_edge, _) * lambda;
       }
     }else{
       int parent_edge = rcpp_get_ancestor(edge, parent);
@@ -478,7 +478,6 @@ List rcpp_preorder(NumericVector lambda,
           sister_edge = child_edges[i];
         }
       }
-      //Rprintf("child : %i, other_child: %i  ", child, other_child);
       F_start = F_ends(parent_edge, _) * lambda * D_ends(sister_edge, _);
       double fsum = 0;
       for (int i = 0; i < k; i++){
