@@ -2,7 +2,7 @@ Package: BDS
 Title: Lineage-Specific Birth-Death-Shift models
 Version: 0.0.1.9000
 Authors@R: c(person("Bj\u00F8rn Tore", "Kopperud", role =c("aut", "cre"), email = "kopperud@protonmail.com"),
-             person("Sebastian", "H\u00F6hna", role = c("aut")),)
+             person("Sebastian", "H\u00F6hna", role = c("aut")))
 Description: What the package does (one paragraph).
 License: GPL-3
 Encoding: UTF-8
