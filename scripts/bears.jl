@@ -29,7 +29,8 @@ model = SSEconstant(λ, μ, η)
 
 ## Calculate the backwards-forwards pass equations
 Ds, Fs = backwards_forwards_pass(model, data; verbose = true) 
-res = calculate_tree_rates(data, model, Ds, Fs; verbose = false);
+Ps = ancestral_state_probabilities(data, model, Ds, Fs)
+res = calculate_tree_rates(data, model, Ds, Fs, Ps; verbose = false);
 
 average_node_rates = res["average_node_rates"]
 
@@ -43,25 +44,20 @@ lambda_average = average_node_rates["λ"]
 @rput lambda_average
 @rput phy
 R"""
-library(ape)
-library(ggtree)
-library(tidytree)
-library(ggplot2)
-library(dplyr)
 
 class(phy) <- "phylo"
-th <- max(node.depth.edgelength(phy))
+th <- max(ape::node.depth.edgelength(phy))
 
-df1 <- tibble("node" = 1:max(phy$edge),
+df1 <- tibble::tibble("node" = 1:max(phy$edge),
             "Speciation rate" = lambda_average)
-x <- as_tibble(phy)
+x <- tidytree::as_tibble(phy)
 
 phydf <- merge(x, df1, by = "node")
-td_phy <- as.treedata(phydf)
+td_phy <- tidytree::as.treedata(phydf)
 
-p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
-    geom_tiplab(size = 8) +
-    theme(legend.position = c(0.2, 0.8)) +
-    xlim(c(0.0, th + 10)) 
+p1a <- ggtree::ggtree(td_phy, aes(color = `Speciation rate`)) +
+    ggtree::geom_tiplab(size = 8) +
+    ggplot2::theme(legend.position = c(0.2, 0.8)) +
+    ggplot2::xlim(c(0.0, th + 10)) 
 """;
 

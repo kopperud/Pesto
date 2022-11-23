@@ -22,7 +22,7 @@ mu <- c(0.05, 0.15)
 rho <- 1.0
 eta <- 0.05
 
-res <- birth_death_shift3(primates, lambda, mu, eta, rho, verbose = TRUE)
+microbenchmark::microbenchmark(birth_death_shift3(primates, lambda, mu, eta, rho, verbose = F))
 lambda_average <- res$lambda
 
 
@@ -46,3 +46,6 @@ p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
   geom_tiplab(size = 8) +
   theme(legend.position = c(0.2, 0.8)) +
   xlim(c(0.0, th + 10))
+
+##
+ggsave("/tmp/p1a.pdf", p1a)
