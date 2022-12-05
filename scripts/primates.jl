@@ -2,6 +2,7 @@ using RCall
 using Distributions
 using StatsPlots
 using Diversification
+using Optim
 
 ##############################
 ##
@@ -9,27 +10,47 @@ using Diversification
 ##
 ###############################
 treefile = "data/primates.tre"
-datafile = ""
 phy = readtree(treefile)
 num_total_species = 367
 ρ = length(phy[:tip_label]) / num_total_species
-data = make_SSEdata(phy, datafile, ρ; include_traits = false)
+data = make_SSEdata2(phy, ρ)
 
 ##############################
 ##
 ##   Set up the model
 ##
 ###############################
-λ = [0.05, 0.1, 0.15, 0.2]
-μ = 0.5 .* λ
 
+H = 0.587405
+
+d1 = LogNormal(log(0.29), 3 * H)
+d2 = LogNormal(log(0.20), 3 * H)
 η = 0.1
+
+n = 10
+speciation = make_quantiles(d1, n)
+extinction = make_quantiles(d2, n)
+
+k = n ^2
+λ = zeros(k)
+μ = zeros(k)
+
+for (i, (sp, ex)) in enumerate(Iterators.product(speciation, extinction))
+    λ[i] = sp
+    μ[i] = ex
+end
 model = SSEconstant(λ, μ, η)
 
-
+##############################
+##
 ## Calculate the backwards-forwards pass equations
+##
+###############################
+
+
 Ds, Fs = backwards_forwards_pass(model, data; verbose = true) 
-res = calculate_tree_rates(data, model, Ds, Fs; verbose = false);
+Ps = ancestral_state_probabilities(data, model, Ds, Fs)
+res = calculate_tree_rates(data, model, Ds, Fs, Ps; verbose = false);
 
 average_node_rates = res["average_node_rates"]
 
@@ -39,6 +60,12 @@ phy = Dict("edge" => data.edges,
      "edge.length" => data.branch_lengths)
 
 lambda_average = average_node_rates["λ"]
+
+##############################
+##
+## Plot the tree using some R code
+##
+###############################
 
 @rput lambda_average
 @rput phy

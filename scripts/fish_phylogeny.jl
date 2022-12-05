@@ -32,7 +32,8 @@ model = SSEconstant(λ, μ, η)
 
 ## Calculate the backwards-forwards pass equations
 Ds, Fs = backwards_forwards_pass(model, data; verbose = true) 
-res = calculate_tree_rates(data, model, Ds, Fs; verbose = true);
+Ps = ancestral_state_probabilities(data, model, Ds, Fs)
+res = calculate_tree_rates(data, model, Ds, Fs, Ps; verbose = true);
 average_node_rates = res["average_node_rates"]
 
 phy = Dict("edge" => data.edges,
