@@ -48,8 +48,8 @@ model = SSEconstant(λ, μ, η)
 ###############################
 
 
-Ds, Fs = backwards_forwards_pass(model, data; verbose = true) 
-Ps = ancestral_state_probabilities(data, model, Ds, Fs)
+Ds, Fs = backwards_forwards_pass(model, data; verbose = true);
+Ps = ancestral_state_probabilities(data, model, Ds, Fs);
 res = calculate_tree_rates(data, model, Ds, Fs, Ps; verbose = false);
 
 average_node_rates = res["average_node_rates"]
