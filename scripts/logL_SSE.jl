@@ -265,6 +265,10 @@ phorseshoe1(x) = (K/2) * log(1 + 4 / x^2)
 phorseshoe2(x) = K * log(1 + 2 / x^2)
 
 
+using GuadGK
+
+
+
 x = -3:0.005:3
 plot(x, phorseshoe1.(x), label = "Horseshoe (lower bound)", ylab = "f(x)", xlab = "x")
 plot!(x, phorseshoe2.(x), label = "Horseshoe (upper bound)")
@@ -297,9 +301,120 @@ function estimate_sse_hyperparam(data::SSEdata; xinit = [0.11, 0.09, 0.05], lowe
     return(optres)
 end
 
-@elapsed estimate_sse_hyperparam(data)
 
-using ForwardDiff
 
-ForwardDiff.gradient(foo, [0.2, 0.1, 0.1])
+
+function foo_eta(η, data; n = 10)
+    λmean, μmean = [0.1, 0.05]
+    
+    H = 0.587405
+
+    d1 = LogNormal(log(λmean), 1 * H)
+    d2 = LogNormal(log(μmean), 1 * H)
+
+    speciation = Diversification.make_quantiles2(d1, n)
+    extinction = Diversification.make_quantiles2(d2, n)
+
+    k = n^2
+    λ = zeros(typeof(λmean), k)
+    μ = zeros(typeof(μmean), k)
+
+    for (i, (sp, ex)) in enumerate(Iterators.product(speciation, extinction))
+        λ[i] = sp
+        μ[i] = ex
+    end
+
+    model = SSEconstant(λ, μ, η)
+    logL = logL_root(model, data)
+    return(logL)
+end
+
+
+
+function lrange(from, to; length = 6)
+    res = exp.(range(log(from), log(to); length = length))
+    return(res)
+end
+
+ηs = lrange(0.0001, 0.1; length = 40)
+
+logLs = zeros(length(ηs))
+for (i, η) in enumerate(ηs)
+    println(i, "\t", η)
+    logLs[i] = foo_eta(η, data; n = 10)
+end
+
+η_mle = ηs[argmax(logLs)]
+println(η_mle)
+
+plot(ηs, logLs, linetype = [:scatter, :line], xscale = :log10)
+tl = data.branch_lengths |> sum
+tlinv = tl |> t -> 1/t
+scatter!([2*tlinv], [foo_eta(2*tlinv, data; n = 10)], color = "red")
+
+
+λmean = 0.29
+μmean = 0.20
+    
+H = 0.587405
+
+d1 = LogNormal(log(λmean), 1 * H)
+d2 = LogNormal(log(μmean), 1 * H)
+
+n = 10
+speciation = Diversification.make_quantiles2(d1, n)
+extinction = Diversification.make_quantiles2(d2, n)
+
+k = n^2
+λ = zeros(typeof(λmean), k)
+μ = zeros(typeof(μmean), k)
+
+for (i, (sp, ex)) in enumerate(Iterators.product(speciation, extinction))
+    λ[i] = sp
+    μ[i] = ex
+end
+
+mymodel = SSEconstant(λ, μ, η_mle)
+
+res = birth_death_shift(mymodel, data)
+
+
+phy = Dict("edge" => data.edges,
+      "tip.label" => data.tiplab,
+      "Nnode" => length(data.tiplab)-1,
+     "edge.length" => data.branch_lengths)
+
+lambda_average = res["lambda"]
+
+##############################
+##
+## Plot the tree using some R code
+##
+###############################
+
+@rput lambda_average
+@rput phy
+R"""
+library(ape)
+library(ggtree)
+library(tidytree)
+library(ggplot2)
+library(dplyr)
+
+class(phy) <- "phylo"
+th <- max(node.depth.edgelength(phy))
+
+df1 <- tibble("node" = 1:max(phy$edge),
+            "Speciation rate" = lambda_average)
+x <- as_tibble(phy)
+
+phydf <- merge(x, df1, by = "node")
+td_phy <- as.treedata(phydf)
+
+p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
+    geom_tiplab(size = 8) +
+    theme(legend.position = c(0.2, 0.8)) +
+    xlim(c(0.0, th + 10)) 
+ggsave("figures/tmptree.pdf", p1a)
+""";
 
