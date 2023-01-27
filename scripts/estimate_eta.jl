@@ -25,7 +25,7 @@ extinction = make_quantiles(d2, n)
 
 
 ## estimate η conditional on λ, μ
-ηml = optimize_eta(λ, μ, data; xinit = )
+ηml = optimize_eta(λ, μ, data)
 
 Diversification.optimize_eta(λ, μ, data)
 sselp(η,  λ, μ, )
