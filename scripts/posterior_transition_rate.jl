@@ -1,12 +1,15 @@
 ## q(t)
 
 using Diversification
+using Distributions
 using QuadGK
 using Plots
 using ProgressMeter
 using BenchmarkTools
 using ForwardDiff
 using RCall
+using DataFrames
+using CSV
 
 phy = readtree(Diversification.path("primates.tre"))
 ρ = 0.67
@@ -15,7 +18,7 @@ data = make_SSEdata2(phy, ρ)
 
 ## set up States
 H = 0.587
-n = 10
+n = 6
 
 dλ = LogNormal(log(λml), H)
 dμ = LogNormal(log(µml), H)
@@ -26,17 +29,32 @@ dμ = LogNormal(log(µml), H)
 model = SSEconstant(λ, μ, η[1])
 res = bds(model, data)
 
-function fq(F, K)
+function fq(model, F, E, K)
+    v = (-1) .* ones(K)
+    v[1] = 1
+
+    w = (2-K) .* ones(K)
+    w[1] = -1
+
     dF(t) = ForwardDiff.derivative(F, t)
-    q(t) = sum(deepcopy(dF(t))) / sum(F(t))
-    return(deepcopy(q))
+
+    q(t) = ((v' * (dF(t) .- (2 .* model.λ .* E(t) .- model.λ .- model.μ) .* F(t))) / (2 .* w' * F(t)))[1]
+    return(q)
 end
+
+E = Diversification.extinction_probability(model, data)
+
+idx = 1
+
+#q = fq(model, Fs[idx], E, 36)
+#x = range(Fs[idx].t[end], Fs[idx].t[1], length = 100)
+#plot(x, q.(x), linetype = [:line])
 
 Ns = zeros(length(Fs))
 @showprogress for (edge_idx, F) in Fs
     println(edge_idx)
-    K = 4
-    q = fq(F, K)
+    K = 36
+    q = fq(model, F, E, K)
     a = F.t[end]
     b = F.t[1]
 
@@ -125,39 +143,43 @@ savefig(deltasp_N, "figures/Nchanges_vs_delta_lambda.pdf")
 
 
 
+## revbayes to ape indices
+R"""
+library(ape)
+phy <- read.nexus("data/bears.tre")
+source("scripts/matchnodes.R")
+mn <- matchNodes(phy)
+"""
+@rget mn
+mn[!,:Rev] = convert(Vector{Int64}, mn[!,:Rev])
+Rev_to_R = Dict()
+R_to_Rev = Dict()
+for row in eachrow(mn)
+    Rev_to_R[row["R"]] = row["Rev"]
+    R_to_Rev[row["Rev"]] = row["R"]
+end
+
+## load the RevBayes log files
+df = DataFrame(CSV.File("output/bears_scm.log"))
+DataFrames.names(df)
+
+using StatsBase
+
+Nscm = zeros(14)
+VarNscm = zeros(14)
+for edge_idx in 1:14
+    node_index = data.edges[edge_idx, 2]
+
+    if node_index != 9
+        Rev_index = R_to_Rev[node_index]
+        Nscm[edge_idx] = mean(df[!,"num_shifts["*string(Rev_index)* "]"])
+        VarNscm[edge_idx] = var(df[!,"num_shifts["*string(Rev_index)* "]"])
+    end
+end
 
 
-
-
-
-
-
-Fs[45].t
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-q = fq(Fs[60], 4)
-
-
-
-
-q(t) = dF(t) .* (1.0 / (-K*))
-
+p1 = plot(Nscm, Ns, linetype = :scatter, xlab = "Integrate q(t) over (t0, t1)", ylab = "RevBayes SCM")
+p2 = plot(Nscm, Ns, yerror = VarNscm, linetype = :scatter)
+plot(p1, p2)
 
 
