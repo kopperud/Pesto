@@ -20,6 +20,10 @@ data = make_SSEdata2(phy, ρ)
 μ = [0.05, 0.10, 0.15, 0.20]
 η = 0.1
 
+model = SSEconstant(λ, μ, η)
+
+res = birth_death_shift(model, data)
+
 ## revbayes to ape indices
 R"""
 library(ape)
@@ -154,10 +158,108 @@ nshifts / n_iters
 ## 1.07643 with P(t[j-1]) and 100k iters
 ## 1.07923 with P(t[j]) and 100k iters
 
-Ns_ode[4,1]
+## Simulate SCM with initializing F to a one-hot vector
 
-Ps[edge_idx](a)
-nshifts
+# How many time steps?
+ntimes = 2000
+Δt = (b-a) / (ntimes -1)
+times = collect(range(a, b, length = ntimes))
+
+
+# shift probability in Δt
+η = 0.1
+shift_probability = -η * Δt
+
+# initial value probability
+starting_distribution = Categorical(Ps[edge_idx](a))
+
+y = zeros(Int64, ntimes, K)
+nshifts = 0
+n_iters = 10000
+
+@showprogress for i in 1:n_iters
+    state = rand(starting_distribution)
+    #y[1, state] += 1
+    for j in 1:(ntimes-1)
+        F0 = zeros(K)
+        F0[state] = 1.0
+
+        ## Euler's method, single step
+        dF = zeros(K)
+        Diversification.forward_prob(dF, F0, p, times[j]);
+        F1 = F0 .+ dF .* Δt
+        F1 = F1 ./ sum(F1)
+
+        new_state = rand(Categorical(F1))[1]
+
+        if new_state != state
+            state = new_state
+            nshifts += 1
+        end
+
+        #y[j+1, state] += 1
+    end
+end
+#mean(y, dims = 1)
+nshifts / n_iters
+
+start = rand(starting_distribution)[1]
+
+F0 = zeros(K)
+F0[start] = 1.0
+
+
+res
+
+###################
+
+
+#lambda_average = average_node_rates["λ"]
+
+##############################
+##
+## Plot the tree using some R code
+##
+###############################
+
+lambda_average = res["lambda"]
+
+phy = Dict("edge" => data.edges,
+      "tip.label" => data.tiplab,
+      "Nnode" => length(data.tiplab)-1,
+     "edge.length" => data.branch_lengths)
+
+## cd /home/bkopper/projects/BDS_deterministic_map
+
+
+@rput lambda_average
+@rput phy
+R"""
+library(ape)
+library(ggtree)
+library(tidytree)
+library(ggplot2)
+library(dplyr)
+"""
+
+R"""
+class(phy) <- "phylo"
+th <- max(node.depth.edgelength(phy))
+
+df1 <- tibble("node" = 1:max(phy$edge),
+            "Speciation rate" = lambda_average)
+x <- as_tibble(phy)
+
+phydf <- merge(x, df1, by = "node")
+td_phy <- as.treedata(phydf)
+
+p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
+    geom_tiplab(size = 8) +
+    theme(legend.position = c(0.2, 0.8)) +
+    xlim(c(0.0, th + 10)) 
+ggsave("figures/bears_4state.pdf", p1a)
+""";
+
 
 
 
