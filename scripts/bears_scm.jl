@@ -11,6 +11,7 @@ using StatsBase
 using DifferentialEquations
 using LaTeXStrings
 using Measures
+using LinearAlgebra
 
 phy = readtree(Diversification.path("bears.tre"))
 ρ = 1.0
@@ -23,6 +24,100 @@ data = make_SSEdata2(phy, ρ)
 model = SSEconstant(λ, μ, η)
 
 res = birth_death_shift(model, data)
+
+Ds, Fs = Diversification.backwards_forwards_pass(model, data);
+Ps = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)
+E = extinction_probability(model, data)
+
+function my_ode1!(dN, N, p, t)
+    F, D, K, η = p
+
+    Ft = F(t)
+    sumF = sum(Ft)
+    Dt = D(t)
+    sumD = sum(Dt)
+
+    for i in 1:K
+        dN[i] = 0.0
+        for j in 1:K
+            if j != i
+                dN[i] -= (Ft[i] / sumF) * (η/(K-1)) * (Dt[j] / sumD)
+            end
+        end
+    end
+end
+
+function my_ode2!(dN, N, p, t)
+    F, D, K, η = p
+
+    dN[:] = - (η/(K-1)) .* (1.0/sum(F(t))) .* (1.0 / sum(D(t))) .* 
+                            (1 .- LinearAlgebra.I(K)) .* (F(t) * D(t)') * ones(K)
+end
+
+function my_ode3!(dN, N, p, t)
+    F, D, K, η = p
+
+    dN[:] = - (η/(K-1)) .* (1.0 / sum(D(t))) .* (1 .- LinearAlgebra.I(K)) * D(t)
+end
+
+function my_ode4!(dN, N, p, t)
+    F, D, K, η = p
+
+    dN[:] = ones(K) .* -η ./ K
+end
+
+my_odes = [
+    my_ode1!,
+    my_ode2!,
+    my_ode3!,
+    my_ode4!
+]
+
+S = zeros(14, length(my_odes))
+for (i, my_ode) in enumerate(my_odes)
+    my_ode = my_odes[i]
+
+    for edge_idx in 1:14
+        a = Fs[edge_idx].t[1]
+        b = Fs[edge_idx].t[end]
+
+        tspan = (a, b)
+
+
+        p = [Fs[edge_idx], Ds[edge_idx], K, η]
+        N0 = zeros(K)
+        prob = ODEProblem(my_ode, N0, tspan, p)
+
+        sol = solve(prob)
+        S[edge_idx, i] = sum(sol[end])
+    end
+end
+
+ps5 = []
+for i in 1:length(my_odes)
+    p = plot(S[:,i], scm[end,:], linetype = :scatter, xlab = "ODE", ylab = "SCM", label = "#state changes")
+    plot!(p, [0.0, 2.2], [0.0, 2.2], linestyle = :dash, label = "One-to-one")
+    append!(ps5, [p])
+end
+plot(ps5...)
+
+hcat(S, η .* data.branch_lengths)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## revbayes to ape indices
 R"""
@@ -169,17 +264,18 @@ times = collect(range(a, b, length = ntimes))
 # shift probability in Δt
 η = 0.1
 shift_probability = -η * Δt
+K = 4
 
 # initial value probability
 starting_distribution = Categorical(Ps[edge_idx](a))
 
 y = zeros(Int64, ntimes, K)
 nshifts = 0
-n_iters = 10000
+n_iters = 20000
 
+p = λ, μ, η, NaN, K, E
 @showprogress for i in 1:n_iters
     state = rand(starting_distribution)
-    #y[1, state] += 1
     for j in 1:(ntimes-1)
         F0 = zeros(K)
         F0[state] = 1.0
@@ -188,9 +284,11 @@ n_iters = 10000
         dF = zeros(K)
         Diversification.forward_prob(dF, F0, p, times[j]);
         F1 = F0 .+ dF .* Δt
-        F1 = F1 ./ sum(F1)
+        #F1 = F1 ./ sum(F1)
+        u0 = Ds[edge_idx](times[j]) .* F1
+        u0 = u0 ./ sum(u0)
 
-        new_state = rand(Categorical(F1))[1]
+        new_state = rand(Categorical(u0))[1]
 
         if new_state != state
             state = new_state
@@ -259,6 +357,103 @@ p1a <- ggtree(td_phy, aes(color = `Speciation rate`)) +
     xlim(c(0.0, th + 10)) 
 ggsave("figures/bears_4state.pdf", p1a)
 """;
+
+
+## LOAD
+
+using Glob
+
+glob("bears_scm_*.log", "output")
+ntimeslices = [250, 500, 1000, 2500, 5000, 7500, 10000]
+outnames = ["output/bears_scm_" * string(x) * ".log" for x in ntimeslices]
+
+scm = zeros(length(outnames), 14)
+for (i, outname) in enumerate(outnames)
+    df9 = CSV.read(outname, DataFrame)
+    for j in 1:14
+        node_index = data.edges[j, 2]
+
+        if node_index != 9
+            Rev_index = R_to_Rev[node_index]
+            scm[i, j] = mean(df9[!,"num_shifts["*string(Rev_index)* "]"])
+        end
+    end
+end
+
+scm
+
+ps3 = []
+for i in 1:14
+    p = plot(ntimeslices, scm[:,i], linetype = [:scatter], label = "SCM", color = "black", ylim = (0.0, 2.3), title = "branch "* string(i))
+    plot!(p, ntimeslices, scm[:,i], linetype = [:line], color = "black", label = "")
+    plot!(p, [ntimeslices[1], ntimeslices[end]], 
+             [data.branch_lengths[i] * η, data.branch_lengths[i] * η],
+             label = "η×bl")
+    append!(ps3, [p])
+end
+
+plot(ps3..., size = (800, 800))
+
+data.branch_lengths .* η
+
+plot(data.branch_lengths .* η, scm[2,:], linetype = :scatter, color = "black")
+plot!([0.0, 2.2], [0.0, 2.2], linetype = :line, linestyle = :dash)
+
+
+
+
+
+
+## Test categorical draws
+
+## in Julia: 
+new_states = zeros(Int64, 2, 4)
+D0 = Ds[1](times[2])
+
+@showprogress for i in 1:5_000_000
+    F0 = [0.20, 0.20, 0.5, 0.1]
+    dF = zeros(K)
+    Diversification.forward_prob(dF, F0, p, times[2]);
+    F1 = F0 .+  Δt .* dF ## F(t + Δt)
+    u0 = D0 .* F1 ## F(t+Δt) * D(t)
+
+    psum = sum(u0)
+    u0 = u0 ./ psum
+
+    new_state = rand(Categorical(u0))[1]
+    new_states[1, new_state] += 1
+end
+
+##  the RevBayes code:
+
+
+@showprogress for i in 1:5_000_000
+    F0 = [0.20, 0.20, 0.5, 0.1]
+    dF = zeros(K)
+    Diversification.forward_prob(dF, F0, p, times[2]);
+    F1 = F0 .+  Δt .* dF ## F(t + Δt)
+    u0 = D0 .* F1 ## F(t+Δt) * D(t)
+    
+    psum = sum(u0)
+
+    u = rand() * psum
+
+    for i in 1:4
+        u -= u0[i]
+        if u < 0.0
+            new_states[2, i] += 1
+            break
+        end
+    end
+        
+    #new_states[2, new_state] += 1
+end
+
+new_states ./ 5_000_000
+
+
+
+
 
 
 
