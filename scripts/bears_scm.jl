@@ -30,7 +30,7 @@ Ps = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)
 E = extinction_probability(model, data)
 
 function my_ode1!(dN, N, p, t)
-    F, D, K, η = p
+    F, D, K, dF, η = p
 
     Ft = F(t)
     sumF = sum(Ft)
@@ -48,29 +48,55 @@ function my_ode1!(dN, N, p, t)
 end
 
 function my_ode2!(dN, N, p, t)
-    F, D, K, η = p
+    F, D, K, dF, η = p
 
     dN[:] = - (η/(K-1)) .* (1.0/sum(F(t))) .* (1.0 / sum(D(t))) .* 
                             (1 .- LinearAlgebra.I(K)) .* (F(t) * D(t)') * ones(K)
 end
 
 function my_ode3!(dN, N, p, t)
-    F, D, K, η = p
+    F, D, K, dF, η = p
 
     dN[:] = - (η/(K-1)) .* (1.0 / sum(D(t))) .* (1 .- LinearAlgebra.I(K)) * D(t)
 end
 
 function my_ode4!(dN, N, p, t)
-    F, D, K, η = p
+    F, D, K, dF, η = p
 
     dN[:] = ones(K) .* -η ./ K
 end
+
+function my_ode5!(dN, N, p, t)
+    F, D, K, dF, η = p
+
+    dN[:] = - dF(t) ./ sum(dF(t))
+end
+
+function my_ode6!(dN, N, p, t)
+    F, D, K, dF, η = p
+
+    dN[:] = - (η/(K-1)) .* sum((1 .- I(K)) .* ((dF(t) ./ (D(t) .* sum(dF(t)))) * D(t)'), dims = 2) 
+end
+
+function my_ode7!(dN, N, p, t)
+    F, D, K, dF, η = p
+
+    trprob = (dF(t) * F(t)') ./ sum(dF(t) * F(t)', dims = 1)
+
+    dN[:] = - (η/(K-1)) .* sum((1 .- I(K)) .* trprob, dims = 2)
+end
+
+ForwardDiff.derivative(Fs[1], 12)
+ForwardDiff.derivative(Fs[1], 12) ./ sum(ForwardDiff.derivative(Fs[1], 12))
 
 my_odes = [
     my_ode1!,
     my_ode2!,
     my_ode3!,
-    my_ode4!
+    my_ode4!,
+    my_ode5!,
+    my_ode6!,
+    my_ode7!
 ]
 
 S = zeros(14, length(my_odes))
@@ -82,9 +108,10 @@ for (i, my_ode) in enumerate(my_odes)
         b = Fs[edge_idx].t[end]
 
         tspan = (a, b)
+        derivF(t) = ForwardDiff.derivative(Fs[edge_idx], t)
 
 
-        p = [Fs[edge_idx], Ds[edge_idx], K, η]
+        p = [Fs[edge_idx], Ds[edge_idx], K, derivF, η]
         N0 = zeros(K)
         prob = ODEProblem(my_ode, N0, tspan, p)
 
@@ -101,7 +128,46 @@ for i in 1:length(my_odes)
 end
 plot(ps5...)
 
+S[:,7] ./ Nscm
+
 hcat(S, η .* data.branch_lengths)
+
+
+## posterior transition probability
+
+function dN10(dP, P, p, t)
+    F, D, K, dF, dG, η = p
+
+    denom = sum(dG(t))
+
+    dP[:] = -(η/(K-1)) .* sum((1 .* I(K)) .* (dG(t) * ones(K)') ./ denom, dims = 2)
+end
+
+edge_idx = 1
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+
+tspan = (a, b)
+derivF(t) = ForwardDiff.derivative(Fs[edge_idx], t)
+trprob(t) = (derivF(t) * D(t)') ./ sum(derivF(t) * D(t)')
+G(t) = Fs[edge_idx](t) ./ sum(Fs[edge_idx])
+Gderiv(t) = ForwardDiff.derivative(G, t)
+
+p = [Fs[edge_idx], Ds[edge_idx], K, derivF, Gderiv, η]
+N0 = zeros(K)
+prob = ODEProblem(dN10, N0, tspan, p)
+sol = solve(prob)
+
+plot(sol)
+
+sol[end] |> sum
+
+Nscm[1]
+
+P = derivF(a) * Ds[1](a)'
+P = P ./ sum(P, dims = 1)
+
+
 
 
 
