@@ -12,6 +12,7 @@ using DifferentialEquations
 using LaTeXStrings
 using Measures
 using LinearAlgebra
+using QuadGK
 
 phy = readtree("data/cetaceans.tre")
 ρ = 1.0
@@ -145,6 +146,7 @@ my_odes = [
     my_ode8!
 ]
 
+nbranches = length(data.branch_lengths)
 S = zeros(length(Fs), length(my_odes))
 for (i, my_ode) in enumerate(my_odes)
     my_ode = my_odes[i]
@@ -268,50 +270,6 @@ plot(n_analytical2, Nscm, linetype = :scatter, xlab = "analytical", ylab = "SCM"
 
 
 
-
-
-
-
-
-
-
-
-
-ForwardDiff.derivative(Fs[1], 30) ./ (M * Fs[1](30))
-
-
-
-
-
-
-
-
-
-
-
-
-Nscm[1]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 hcat(S, η .* data.branch_lengths)
 
 
@@ -350,12 +308,42 @@ Nscm[1]
 P = derivF(a) * Ds[1](a)'
 P = P ./ sum(P, dims = 1)
 
+### Attempt3
 
-## load cetaceans
+## ηᵢ(t) = \frac{2 λᵢ Eᵢ(t) Fᵢ(t) + dFᵢ(t)/dt - (λᵢ + μᵢ)Fᵢ(t)}{Fᵢ(t) - (1/(K-1))∑_{j ̸= i} Fⱼ(t)}
 
-df1 = DataFrame(CSV.File("output/bears_scm_run_1.log"))
-df2 = DataFrame(CSV.File("output/bears_scm_run_2.log"))
-df = vcat(df1, df2)
+edge_idx = 104
+Fs[edge_idx]
+fderiv(t) = ForwardDiff.derivative(Fs[edge_idx], t)
+pderiv(t) = ForwardDiff.derivative(Ps[edge_idx], t)
+fd(t) = Fs[edge_idx](t) .* Ds[edge_idx](t)
+deriv_fd(t) = ForwardDiff.derivative(fd, t)
+
+q1(t) = (2 * λ[1] * E(t)[1] * Ps[edge_idx](t)[1] - pderiv(t)[1] - (λ[1] + μ[1])* Ps[edge_idx](t)[1]) / 
+            (Ps[edge_idx](t)[1] - Ps[edge_idx](t)[2])
+q2(t) = (2 * λ[2] * E(t)[2] * Ps[edge_idx](t)[2] - pderiv(t)[2] - (λ[2] + μ[2])* Ps[edge_idx](t)[2]) / 
+            (Ps[edge_idx](t)[2] - Ps[edge_idx](t)[1])
+
+# fd
+q1(t) = (2 * λ[2] * E(t)[2] * fd(t)[2] - deriv_fd(t)[2] - (λ[2] + μ[2])* fd(t)[2]) / 
+            (fd(t)[2] - fd(t)[1])
+
+x = collect(range(Fs[edge_idx].t[1], Fs[edge_idx].t[end], length = 50 ))
+plot(x, q1.(x))
+plot!(x, q2.(x))
+
+using QuadGK
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+N1 = quadgk(t -> q1(t), a, b)[1]
+N2 = quadgk(t -> q2(t), a, b)[2]
+
+N1 + N2
+Nscm[104]
+
+
+N1 + N2
+
 
 
 
