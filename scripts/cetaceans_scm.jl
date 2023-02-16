@@ -372,6 +372,153 @@ plot(p9, p10, ylim = (0.0, 0.9))
 
 
 
+## Transition probability in a small time span Δt
+
+
+edge_idx = 104
+
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+
+ntimes = 30
+times = collect(range(a, b, length = ntimes))
+Δt = times[2] - times[1]
+
+trans_probs = zeros(ntimes-1, K, K)
+
+for i in 1:(ntimes-1)
+    #F0 = [1.0, 0.0]
+    #Fₜ₊₁ = 
+    #C = ((Ds[edge_idx](times[i]) * ones(K)') .* (I(K) .+ Amatrix(times[i]) * I(K) * Δt))'
+    tspan = (times[i], times[i] + Δt)
+    p = [λ, μ, η, NaN, K, E]
+    F0s = [[1.0, 0.0], [0.0, 1.0]]
+
+    res = zeros(K,K)
+    for (j, F0) in enumerate(F0s)
+        prob = ODEProblem(Diversification.forward_prob, F0, tspan, p)
+        sol = solve(prob)[end]
+        res[j,:] = sol
+    end
+
+    #Δt .* Amatrix(t) * I(K)
+    #C = I(K) .+ Δt .* Amatrix(times[i]) * I(K)
+    C = I(K) .+ res
+
+    trans_probs[i,:,:] = C ./ ((C * ones(K)) * ones(K)')
+end
+
+trans_probs[:,1,2]
+
+
+trans_probs[1,:,:] ./ sum(trans_probs[1,:,:], dims = 2)
+
+trans_probs[1,:,:] ./ ((trans_probs[1,:,:] * ones(K))*ones(K)')
+
+trans_probs[1,:,:]
+
+"asd" * 1.0
+
+import Base: *
+
+function *(x::Float64, s::String)
+    return(s)
+end
+
+*(1.0, "hello")
+
+
+
+
+
+sum([
+    1.0 2.0
+    3.0 4.0
+], dims = 2)
+
+P_unnormalized = Ds[edge_idx](times[1]) .* ([1.0, 0.0] .+ Δt .* Amatrix(times[1]) * [1.0, 0.0])
+
+
+trans_probs[1,:,:]
+
+trans_probs[end,:,:] ./ Δt
+
+plot(times[2:end], trans_probs[:,1,2], ylim = (0.0, 0.1))
+plot!(times[2:end], trans_probs[:,2,1])
+
+Amatrix(times[1]) * [1.0, 0.0] .* Δt
+
+## Attempt 4
+
+# dN/dt = dP/dt + D2(t)
+
+function my_ode100!(dN, N, p, t)
+    λ, μ, E, D, S, K = p
+
+    Q = -I(K) .* η .+ (1 .- I(K)) .* (η/(K-1))
+    A = (λ .+ μ .- 2 .* λ .* E(t)) .* I(K) .- Q
+
+    P1 = [1.0, 0.0] .+ A * [1.0, 0.0]
+    P1 = P1 ./ sum(P1)
+
+    P2 = [0.0, 1.0] .+ A * [0.0, 1.0]
+    P2 = P2 ./ sum(P2)
+    
+    dN[1] = P1[2] * S(t)[2]
+    dN[2] = P2[1] * S(t)[1]
+end
+
+
+
+
+edge_idx = 104
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+tspan = (a, b)
+p = [λ, μ, E, Ds[edge_idx], Ps[edge_idx], K]
+
+N0 = [0.0, 0.0]
+prob = ODEProblem(my_ode100!, N0, tspan, p)
+solve(prob)
+plot(solve(prob))
+
+
+plot(plot(Fs[104], title = "F"), plot(Ds[104], xflip = true, title = "D"), ylim = (0.0, 0.8))
+
+foo(t) = ForwardDiff.derivative(Fs[edge_idx], t) .- ForwardDiff.derivative(Ds[edge_idx],t)
+
+foo(17)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
