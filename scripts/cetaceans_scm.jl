@@ -338,6 +338,9 @@ b = Fs[edge_idx].t[end]
 N1 = quadgk(t -> q1(t), a, b)[1]
 N2 = quadgk(t -> q2(t), a, b)[2]
 
+
+
+
 N1 + N2
 Nscm[104]
 
@@ -345,9 +348,27 @@ Nscm[104]
 N1 + N2
 
 
+## PLOT F for branch 104 in cetacea
+edge_idx = 104
+
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+
+x = collect(range(a, b, length =50))
+
+p9 = plot(x, hcat(Fs[edge_idx].(x)...)', ylab = "F(t)", xlab = "time (age)", xflip = true, title = "branch 104")
+
+edge_idx = 1
+
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+
+x = collect(range(a, b, length =50))
+
+p10 = plot(x, hcat(Fs[edge_idx].(x)...)', ylab = "F(t)", xlab = "time (age)", xflip = true, title = "branch 1")
 
 
-
+plot(p9, p10, ylim = (0.0, 0.9))
 
 
 
