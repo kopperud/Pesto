@@ -489,6 +489,174 @@ foo(t) = ForwardDiff.derivative(Fs[edge_idx], t) .- ForwardDiff.derivative(Ds[ed
 
 foo(17)
 
+## compute G(t) as in L+P (2020) sys bio
+
+function G_ode!(dG, G, p, t)
+    λ, μ, E, D, S, K = p
+
+    Q = -I(K) .* η .+ (1 .- I(K)) .* (η/(K-1))
+    A = diagm(-λ .- μ .+ 2 .* λ .* E(t)) .+ Q
+
+    dG[:,:] = A * G
+end
+
+edge_idx = 1
+a = Fs[edge_idx].t[end]
+b = Fs[edge_idx].t[1]
+#tspan = (0.0, maximum(data.branching_times))
+tspan = (a, b)
+p = [λ, μ, E, Ds[edge_idx], Ps[edge_idx], K]
+
+G0 = zeros(K,K) + I(K)
+prob = ODEProblem(G_ode!, G0, tspan, p)
+solG = solve(prob, Tsit5(), dt = 0.01)
+plot(solG)
+
+## F(t+s) = G(t+s) * F(t)
+X0 = solG(a) \ Ds[1](a)
+
+solG(a+2.5) * X0
+Ds[1](a+2.5)
+
+(solG(a+2.5) * X0) ./ Ds[1](a+2.5)
+
+solG.t
+
+Fs[1](30)
+
+
+
+edge_idx = 104
+a = Ds[edge_idx].t[1]
+b = Ds[edge_idx].t[end]
+
+foobar1(t) = η * Ds[edge_idx](t)[2] / sum(Ds[edge_idx](t))
+foobar2(t) = η * Ds[edge_idx](t)[1] / sum(Ds[edge_idx](t))
+
+n1 = quadgk(foobar1, a, b)[1]
+n2 = quadgk(foobar2, a, b)[1]
+
+Nscm[104]
+
+function my_another_ode(dN, N, p, t)
+    D, F, K, η = p
+
+    denom = sum(F(t) .* D(t))    
+
+    dN[1] = (η /(K-1)) * (F(t)[2] * D(t)[2]) / denom
+    dN[2] = (η /(K-1)) * (F(t)[1] * D(t)[1]) / denom
+end
+
+
+edge_idx = 1
+a = Ds[edge_idx].t[1]
+b = Ds[edge_idx].t[end]
+tspan = (a, b)
+p = [Ds[edge_idx], Fs[edge_idx], K, η]
+N0 = [0.0, 0.0]
+
+prob1 = ODEProblem(my_another_ode, N0, tspan, p)
+solve(prob1)[end]
+
+function normalize_rows(A)
+    norm = sum(A, dims = 2)
+    res = A ./ (norm * ones(size(A)[1])')
+    return(res)
+end
+
+normalize_rows(I(K) .+ Δt .* Amatrix(10) * I(K))
+
+function onehot(i, K)
+    x = zeros(K)
+    x[i] = 1.0
+    return(x)
+end
+
+Pmatrix(t, Δt) = [
+    (onehot(1, K) .+ Δt .* Amatrix(t) * onehot(1, K))[1] (onehot(1, K) .+ Δt .* Amatrix(t) * onehot(1, K))[2]
+    (onehot(2, K) .+ Δt .* Amatrix(t) * onehot(2, K))[1] (onehot(2, K) .+ Δt .* Amatrix(t) * onehot(2, K))[2]
+]
+
+Pmatrix(10.0, Δt)
+## this is equivalent to above
+Pm = I(K) .+ Δt .* Amatrix(10.0) * I(K)
+
+0.00072439 / (-Δt)
+
+
+
+factorize(Pm)
+
+svd(Pm)
+
+
+names(df)
+
+ntimes = 1000
+
+edge_idx = 104
+a = Ds[edge_idx].t[end]
+b = Ds[edge_idx].t[1]
+times = collect(range(a, b, length = ntimes))
+Δt = times[2] - times[1]
+
+ys = zeros(K, ntimes-1)
+for i in 1:(ntimes-1)
+    n = abs.(Ps[edge_idx](times[i]) .- Ps[edge_idx](times[i+1]))
+    ys[:,i] = n
+end
+
+Estatechange = zeros(ntimes-1)
+for i in 1:(ntimes-1)
+    #n = abs.(Ps[edge_idx](times[i]) .- Ps[edge_idx](times[i+1]))
+    Pm = normalize_rows(I(K) .+ Δt .* Amatrix(times[i]) * I(K))
+    #fnormalized(t) = Fs[edge_idx]
+    current_val = Fs[edge_idx](times[i]) ./ sum(Fs[edge_idx](times[i]))
+    Estatechange[i] = ((current_val * ones(K)') .* Pm[1,2])[1,2]
+end
+Estatechange |> sum
+
+sum(ys, dims = 2)
+
+
+Nscm[1]
+
+
+
+
+
+
+tspan = (a, b)
+p = [Ds[edge_idx], Fs[edge_idx], K, η]
+N0 = [0.0, 0.0]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#foobar1(29)
+
 
 
 
