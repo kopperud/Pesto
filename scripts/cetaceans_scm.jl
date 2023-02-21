@@ -30,7 +30,7 @@ model = SSEconstant(λ, μ, η)
 res = birth_death_shift(model, data)
 
 Ds, Fs = Diversification.backwards_forwards_pass(model, data);
-Ps = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)
+Ss = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)
 E = extinction_probability(model, data)
 
 ## revbayes to ape indices
@@ -181,7 +181,7 @@ plot(ps5..., size = (700, 700))
 
 function Amatrix(t)
     Q = -I(K) .* η .+ (1 .- I(K)) .* (η/(K-1))
-    res = (λ .+ μ .- 2 .* λ .* E(t)) .* I(K) .- Q
+    res = diagm(- (λ .+ μ .- 2 .* λ .* E(t))) .+ Q
     return(res)
 end
 
@@ -630,72 +630,103 @@ tspan = (a, b)
 p = [Ds[edge_idx], Fs[edge_idx], K, η]
 N0 = [0.0, 0.0]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#foobar1(29)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+function trans_prob8(model, t, Δt)
+    K = length(model.λ)
+
+    A = Amatrix(t)
+
+    P_unnorm = I(2) .- Δt .* Amatrix(t) 
+    rsum = sum(I(K) .- Δt .* Amatrix(t), dims = 2)
+    P = P_unnorm ./ rsum
+    return(P)
+end
+
+nshifts = zeros(nbranches)
+@showprogress for edge_idx in 1:nbranches
+    a = Fs[edge_idx].t[1]
+    b = Fs[edge_idx].t[end]
+
+    ntimes = 1000
+    times = collect(range(a, b, length = ntimes))
+    Δt = times[2] - times[1]
+
+    nshift = 0.0
+    for i in 2:ntimes
+        P = trans_prob8(model, times[i], Δt)
+        P[1,1] = 0.0
+        P[2,2] = 0.0
+
+        state_prob = Ss[edge_idx](times[i])
+        #state_prob = Fs[edge_idx](times[i]) ./ sum(Fs[edge_idx](times[i]))
+        #nshift += state_prob[1] .* P[1,2]
+        #nshift += state_prob[2] .* P[2,1]
+        nshift += sum(P * state_prob)
+    end
+    nshifts[edge_idx] = nshift
+end
+
+start1 = Ds[30](Ds[30].t[end]) .* Ds[1](Ds[1].t[end]) .* λ
+
+Fs[30](Fs[30].t[1]) ./ sum(Fs[30](Fs[30].t[1]))
+Ss[30](Fs[30].t[1])
+
+(Ds[1](Ds[1].t[end]) .* Ds[30](Ds[30].t[end]) .* λ) ./ sum(Ds[1](Ds[1].t[end]) .* Ds[30](Ds[30].t[end]) .* λ)
+
+start1 ./ sum(start1)
+Ss[30](Ds[30].t[end])
+
+nshifts
+plot(nshifts, Nscm, linetype = :scatter)
+plot(nshifts, data.branch_lengths, linetype = :scatter)
+plot!([nshifts[104]],[ data.branch_lengths[104]], color = "red", lab = "", linetype = :scatter)
+annotate!(nshifts, data.branch_lengths, 1:nbranches)
+
+plot(data.branch_lengths, nshifts ./ data.branch_lengths, linetype = :scatter)
+
+histogram(nshifts ./ data.branch_lengths)
+
+
+
+phy = Dict("edge" => data.edges,
+      "tip.label" => data.tiplab,
+      "Nnode" => length(data.tiplab)-1,
+     "edge.length" => data.branch_lengths)
+
+## cd /home/bkopper/projects/BDS_deterministic_map
+
+node = data.edges[:,2]
+@rput nshifts
+@rput phy
+@rput node
+
+R"""
+library(ape)
+library(ggtree)
+library(tidytree)
+library(ggplot2)
+library(dplyr)
+"""
+
+R"""
+class(phy) <- "phylo"
+th <- max(node.depth.edgelength(phy))
+
+df1 <- tibble("node" = node,
+            "nshifts" = nshifts)
+df1 <- rbind(df1, 
+            tibble("node" = length(phy$tip.label),
+                   "nshifts" = 0))
+x <- as_tibble(phy)
+
+phydf <- merge(x, df1, by = "node")
+td_phy <- as.treedata(phydf)
+
+p1a <- ggtree(td_phy, aes(color = `nshifts`)) +
+    geom_tiplab(size = 8) +
+    theme(legend.position = c(0.2, 0.8)) +
+    xlim(c(0.0, th + 10)) 
+ggsave("figures/cetacea_2state.pdf", p1a)
+""";
 
 
 
