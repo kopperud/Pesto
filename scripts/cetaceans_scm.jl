@@ -21,8 +21,8 @@ data = make_SSEdata2(phy, ρ)
 #λ = [0.1, 0.3, 0.1, 0.3]
 #μ = [0.05, 0.10, 0.15, 0.20]
 λ = [0.2, 0.1]
-μ = [0.05, 0.1]
-η = 0.1
+μ = [0.1, 0.0]
+η = 0.001
 K = length(λ)
 
 model = SSEconstant(λ, μ, η)
@@ -65,118 +65,10 @@ for edge_idx in 1:nbranches
     end
 end
 
+nshifts = compute_nshifts(model, data, Ds, Ss)
 
-function my_ode1!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
+sum(nshifts)
 
-    Ft = F(t)
-    sumF = sum(Ft)
-    Dt = D(t)
-    sumD = sum(Dt)
-
-    for i in 1:K
-        dN[i] = 0.0
-        for j in 1:K
-            if j != i
-                dN[i] -= (Ft[i] / sumF) * (η/(K-1)) * (Dt[j] / sumD)
-            end
-        end
-    end
-end
-
-function my_ode2!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    dN[:] = - (η/(K-1)) .* (1.0/sum(F(t))) .* (1.0 / sum(D(t))) .* 
-                            (1 .- LinearAlgebra.I(K)) .* (F(t) * D(t)') * ones(K)
-end
-
-function my_ode3!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    dN[:] = - (η/(K-1)) .* (1.0 / sum(D(t))) .* (1 .- LinearAlgebra.I(K)) * D(t)
-end
-
-function my_ode4!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    dN[:] = ones(K) .* -η ./ K
-end
-
-function my_ode5!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    dN[:] = - dF(t) ./ sum(dF(t))
-end
-
-function my_ode6!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    dN[:] = - (η/(K-1)) .* sum((1 .- I(K)) .* ((dF(t) ./ (D(t) .* sum(dF(t)))) * D(t)'), dims = 2) 
-end
-
-function my_ode7!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    trprob = (dF(t) * F(t)') ./ sum(dF(t) * F(t)', dims = 1)
-
-    dN[:] = - (η/(K-1)) .* sum((1 .- I(K)) .* trprob, dims = 2)
-end
-
-function my_ode8!(dN, N, p, t)
-    F, D, K, dF, dG, η = p
-
-    #denom = sum(dG(t))
-    denom = 1.0
-
-    dN[:] = -(η/(K-1)) .* sum((1 .* I(K)) .* (dG(t) * ones(K)') ./ denom, dims = 2)
-end
-
-ForwardDiff.derivative(Fs[1], 12)
-ForwardDiff.derivative(Fs[1], 12) ./ sum(ForwardDiff.derivative(Fs[1], 12))
-
-my_odes = [
-    my_ode1!,
-    my_ode2!,
-    my_ode3!,
-    my_ode4!,
-    my_ode5!,
-    my_ode6!,
-    my_ode7!,
-    my_ode8!
-]
-
-nbranches = length(data.branch_lengths)
-S = zeros(length(Fs), length(my_odes))
-for (i, my_ode) in enumerate(my_odes)
-    my_ode = my_odes[i]
-
-    for edge_idx in 1:nbranches
-        a = Fs[edge_idx].t[1]
-        b = Fs[edge_idx].t[end]
-
-        tspan = (a, b)
-        derivF(t) = ForwardDiff.derivative(Fs[edge_idx], t)
-        G(t) = Fs[edge_idx](t) ./ sum(Fs[edge_idx](t))
-        dG(t) = ForwardDiff.derivative(G, t) 
-
-
-        p = [Fs[edge_idx], Ds[edge_idx], K, derivF, dG, η]
-        N0 = zeros(K)
-        prob = ODEProblem(my_ode, N0, tspan, p)
-
-        sol = solve(prob)
-        S[edge_idx, i] = sum(sol[end])
-    end
-end
-
-ps5 = []
-for i in 1:length(my_odes)
-    p = plot(S[:,i], Nscm, linetype = :scatter, xlab = "ODE", ylab = "SCM", label = "#state changes")
-    plot!(p, [0.0, 0.2], [0.0, 0.2], linestyle = :dash, label = "One-to-one")
-    append!(ps5, [p])
-end
-plot(ps5..., size = (700, 700))
 
 
 function Amatrix(t)
@@ -184,89 +76,6 @@ function Amatrix(t)
     res = diagm(- (λ .+ μ .- 2 .* λ .* E(t))) .+ Q
     return(res)
 end
-
-Amatrix(30) * Fs[1](30)
-
-ForwardDiff.derivative(Fs[1], 30)
-
-Δt = -0.01
-first = Amatrix(30) * [0.0, 1.0] .* Δt .+ [0.0, 1.0]
-second = Amatrix(30) * [1.0, 0.0] .* Δt .+ [1.0, 0.0]
-
-
-function trans_prob!(dP, P, p, t)
-    K, E, η = p
-
-    Q = -I(K) .* η .+ (1 .- I(K)) .* (η/(K-1))
-    A = diagm(λ .+ μ .- 2 .* λ .* E(t)) .- Q
-
-    #denom = sum(A * I(K), dims = 1)
-    dP[:] = - A * I(K) * ones(K)
-end
-
-#P0 = (1/K) .* ones(K) * ones(K)'
-P0 = [
-    0.0, 0.0
-]
-
-p = [K, E, η]
-edge_idx = 104
-tspan = (Fs[edge_idx].t[1], Fs[edge_idx].t[end])
-
-prob = ODEProblem(trans_prob!, P0, tspan, p)
-sol = solve(prob)
-
-plot(sol, linetype = [:line])
-
-U, S, V = svd(Amatrix(30))
-
-svd([
-    -1.0 1/2 1/2
-    1/2 -1.0 1/2
-    1/2 1/2 -1.0
-])
-
-U * diagm(S) * V
-
-function dNbinary(dN, N, p, t)
-    a, b, G, D = p
-
-    dN[1] = a(t) * G(t)[1]#* (D(t)[2] ./ sum(D(t)))
-    dN[2] = b(t) * G(t)[2]#* (D(t)[1] ./ sum(D(t)))
-end
-
-n_analytical2 = zeros(nbranches)
-for edge_idx in 1:nbranches
-    G(t) = Fs[edge_idx](t) ./ sum(Fs[edge_idx](t))
-    dG(t) = ForwardDiff.derivative(G, t)
-
-    #af(t) = ForwardDiff.derivative(Fs[edge_idx], t)[1] / (Fs[edge_idx](t)[2] - Fs[edge_idx](t)[1])
-    #bf(t) = ForwardDiff.derivative(Fs[edge_idx], t)[2] / (Fs[edge_idx](t)[1] - Fs[edge_idx](t)[2])
-    af(t) = ForwardDiff.derivative(G, t)[1] / (G(t)[2] - G(t)[1])
-    bf(t) = ForwardDiff.derivative(G, t)[2] / (G(t)[1] - G(t)[2])
-
-    p = [af, bf, G, Ds[edge_idx]]
-    tspan = (Fs[edge_idx].t[1], Fs[edge_idx].t[end])
-
-    N0 = zeros(K)
-    prob = ODEProblem(dNbinary, N0, tspan, p)
-
-    sol = solve(prob)
-    n_analytical2[edge_idx] = sum(sol[end])
-end
-
-edge_idx = 104
-af(t) = ForwardDiff.derivative(Fs[edge_idx], t)[1] / (Fs[edge_idx](t)[2] - Fs[edge_idx](t)[1])
-bf(t) = ForwardDiff.derivative(Fs[edge_idx], t)[2] / (Fs[edge_idx](t)[1] - Fs[edge_idx](t)[2])
-x = collect(range(Fs[edge_idx].t[1], Fs[edge_idx].t[end], length = 50))
-plot(x, af.(x))
-plot!(x, bf.(x))
-
-plot(n_analytical2, Nscm, linetype = :scatter, xlab = "analytical", ylab = "SCM")
-
-
-
-
 
 
 
@@ -616,27 +425,22 @@ for i in 1:(ntimes-1)
 end
 Estatechange |> sum
 
-sum(ys, dims = 2)
+M = [
+    1.0 2.0
+    3.0 4.0
+]
+
+rsum = sum(M, dims = 2)
 
 
-Nscm[1]
-
-
-
-
-
-
-tspan = (a, b)
-p = [Ds[edge_idx], Fs[edge_idx], K, η]
-N0 = [0.0, 0.0]
-
-function trans_prob8(model, t, Δt)
+function trans_prob8(model, D, t, Δt)
     K = length(model.λ)
 
     A = Amatrix(t)
 
-    P_unnorm = I(2) .- Δt .* Amatrix(t) 
-    rsum = sum(I(K) .- Δt .* Amatrix(t), dims = 2)
+    P_unnorm = (I(2) .- Δt .* Amatrix(t)) .* (ones(K) * D(t)')
+    #rsum = sum(I(K) .- Δt .* Amatrix(t), dims = 2)
+    rsum = sum(P_unnorm, dims = 2) ## row sum
     P = P_unnorm ./ rsum
     return(P)
 end
@@ -646,13 +450,15 @@ nshifts = zeros(nbranches)
     a = Fs[edge_idx].t[1]
     b = Fs[edge_idx].t[end]
 
-    ntimes = 1000
+    ntimes = 500
     times = collect(range(a, b, length = ntimes))
     Δt = times[2] - times[1]
 
     nshift = 0.0
-    for i in 2:ntimes
-        P = trans_prob8(model, times[i], Δt)
+    Ps = zeros(ntimes, K, K)
+    for i in 1:(ntimes-1)
+        P = trans_prob8(model, Ds[edge_idx], times[i], Δt)
+        #P = P .* Ds[edge_idx]
         P[1,1] = 0.0
         P[2,2] = 0.0
 
@@ -660,31 +466,120 @@ nshifts = zeros(nbranches)
         #state_prob = Fs[edge_idx](times[i]) ./ sum(Fs[edge_idx](times[i]))
         #nshift += state_prob[1] .* P[1,2]
         #nshift += state_prob[2] .* P[2,1]
-        nshift += sum(P * state_prob)
+        #nshift += sum(P * state_prob)
+        #nshift += maximum([diff(P * state_prob)[1], 0.0])
+        #nshift += maximum([(P' * state_prob)[1] - (P' * state_prob)[2], 0.0])
+
+        ## this one is good
+        #nshift += abs((P' * state_prob)[1] - (P' * state_prob)[2])
+
+        nshift += abs(diff(P' * state_prob)[1])
+        #nshift += sum(P)
+        
     end
     nshifts[edge_idx] = nshift
 end
 
-start1 = Ds[30](Ds[30].t[end]) .* Ds[1](Ds[1].t[end]) .* λ
+P = trans_prob8(model, Ds[1], Ds[1].t[end], Δt)
 
-Fs[30](Fs[30].t[1]) ./ sum(Fs[30](Fs[30].t[1]))
-Ss[30](Fs[30].t[1])
+state_prob = Ss[1](Ds[1].t[end])
 
-(Ds[1](Ds[1].t[end]) .* Ds[30](Ds[30].t[end]) .* λ) ./ sum(Ds[1](Ds[1].t[end]) .* Ds[30](Ds[30].t[end]) .* λ)
+P0 = (1 .- I(K)) .* P
 
-start1 ./ sum(start1)
-Ss[30](Ds[30].t[end])
+L = LowerTriangular(P0)
+U = UpperTriangular(P0)
 
-nshifts
-plot(nshifts, Nscm, linetype = :scatter)
-plot(nshifts, data.branch_lengths, linetype = :scatter)
+L1 = L .* (Ss[1](Ds[1].t[end]) * ones(K)')
+U1 = U .* (Ss[1](Ds[1].t[end]) * ones(K)')
+
+sum(abs.(L1 .- U1'))
+
+
+P = trans_prob8(model, Ds[1], Ds[1].t[end], Δt)
+P[1,1] = 0.0
+P[2,2] = 0.0
+
+state_prob = Ss[1](Ds[1].t[end])
+abs(diff(P' * state_prob)[1])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+histogram(nshifts, bins = 15)
+nshifts |> argmax
+std_err_mean = sqrt.(Nscm/size(df)[1])
+shiftplot = plot(nshifts, Nscm, yerror = std_err_mean,linetype = :scatter, xlab = "Analytical solution", ylab = "RevBayes SCM", lab = "Number of shifts")
+ymax = maximum([maximum(Nscm), maximum(nshifts)])
+plot!(shiftplot, [0.0, ymax], [0.0, ymax], lab = "One-to-one", linestyle = :dash)
+savefig(shiftplot, "figures/scm_vs_nshift.pdf")
+
+plot(nshifts, data.branch_lengths .* η, linetype = :scatter, xlab = "nshifts", ylab="bl * η")
 plot!([nshifts[104]],[ data.branch_lengths[104]], color = "red", lab = "", linetype = :scatter)
 annotate!(nshifts, data.branch_lengths, 1:nbranches)
+
+Δt = -0.1
+trans_prob8(model, Ds[1], Ds[1].t[end], Δt)
+
+## for all start states x
+nshifts2 = zeros(nbranches)
+@showprogress for edge_idx in 1:nbranches
+    a = Fs[edge_idx].t[1]
+    b = Fs[edge_idx].t[end]
+
+    ntimes = 1000
+    times = collect(range(a, b, length = ntimes))
+    Δt = times[2] - times[1]
+
+    for i in 1:(ntimes-1)
+        P = trans_prob8(model, Ds[edge_idx], times[i], Δt)
+        for x in 1:2
+            F1 = P[:,x]
+            nshifts2[edge_idx] += Fs[edge_idx](times[i])[x] * P[x] * Ds[edge_idx](times[i+1])[3-x]
+        end
+    end
+end
+
+nshifts2
+plot(Nscm, nshifts2, seriestype = "scatter")
+
+
+
 
 plot(data.branch_lengths, nshifts ./ data.branch_lengths, linetype = :scatter)
 
 histogram(nshifts ./ data.branch_lengths)
 
+## reorder to ape indices
+ancestors = Diversification.make_ancestors(data)
+
+node_nshifts = zeros(maximum(data.edges))
+for i in 1:maximum(data.edges)
+    if i == length(data.tiplab)+1
+        node_nshifts[i] = 0.0
+    else
+        edge_idx = ancestors[i]
+        node_val = nshifts[edge_idx]
+        node_nshifts[i] = node_val
+    end
+end
+
+node_nshifts
 
 
 phy = Dict("edge" => data.edges,
@@ -694,10 +589,17 @@ phy = Dict("edge" => data.edges,
 
 ## cd /home/bkopper/projects/BDS_deterministic_map
 
+res = calculate_tree_rates(data, model, Ds, Fs, Ss; verbose = false);
+
+average_node_rates = res["average_node_rates"]
+
 node = data.edges[:,2]
+lambda_avg = average_node_rates["λ"]
 @rput nshifts
 @rput phy
 @rput node
+@rput lambda_avg
+@rput node_nshifts
 
 R"""
 library(ape)
@@ -705,27 +607,41 @@ library(ggtree)
 library(tidytree)
 library(ggplot2)
 library(dplyr)
+library(patchwork)
 """
 
 R"""
 class(phy) <- "phylo"
 th <- max(node.depth.edgelength(phy))
 
-df1 <- tibble("node" = node,
-            "nshifts" = nshifts)
-df1 <- rbind(df1, 
-            tibble("node" = length(phy$tip.label),
-                   "nshifts" = 0))
+df1 <- tibble("node" = 1:max(phy$edge),
+            "nshifts" = node_nshifts)
+#df1 <- rbind(df1, 
+#            tibble("node" = length(phy$tip.label)+1,
+#                   "nshifts" = 0))
 x <- as_tibble(phy)
 
 phydf <- merge(x, df1, by = "node")
+df2 <- tibble("node" = 1:max(phy$edge),
+                "lambda" = lambda_avg)
+phydf <- merge(phydf, df2, by = "node")
 td_phy <- as.treedata(phydf)
 
-p1a <- ggtree(td_phy, aes(color = `nshifts`)) +
-    geom_tiplab(size = 8) +
+p1 <- ggtree(td_phy, aes(color = `nshifts`), size = 2) +
+    geom_tiplab(size = 5) +
     theme(legend.position = c(0.2, 0.8)) +
-    xlim(c(0.0, th + 10)) 
-ggsave("figures/cetacea_2state.pdf", p1a)
+    xlim(c(0.0, th + 10)) +
+    ggtitle("Number of shifts") +
+    scale_colour_gradient(low = "black", high = "red")
+
+p2 <- ggtree(td_phy, aes(color = `lambda`),size =2) +
+    geom_tiplab(size = 5) +
+    theme(legend.position = c(0.2, 0.8)) +
+    xlim(c(0.0, th + 10)) +
+    ggtitle("Mean speciation rate")
+p <- p1 + p2
+
+ggsave("figures/cetacea_2state_nshifts.pdf", p, width = 300, height = 300, units = "mm")
 """;
 
 
