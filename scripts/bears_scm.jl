@@ -9,9 +9,6 @@ using DataFrames
 using CSV
 using StatsBase
 using DifferentialEquations
-using LaTeXStrings
-using Measures
-using LinearAlgebra
 
 phy = readtree(Diversification.path("bears.tre"))
 ρ = 1.0
@@ -26,164 +23,8 @@ model = SSEconstant(λ, μ, η)
 res = birth_death_shift(model, data)
 
 Ds, Fs = Diversification.backwards_forwards_pass(model, data);
-Ps = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)
+Ss = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)
 E = extinction_probability(model, data)
-
-function my_ode1!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    Ft = F(t)
-    sumF = sum(Ft)
-    Dt = D(t)
-    sumD = sum(Dt)
-
-    for i in 1:K
-        dN[i] = 0.0
-        for j in 1:K
-            if j != i
-                dN[i] -= (Ft[i] / sumF) * (η/(K-1)) * (Dt[j] / sumD)
-            end
-        end
-    end
-end
-
-function my_ode2!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    dN[:] = - (η/(K-1)) .* (1.0/sum(F(t))) .* (1.0 / sum(D(t))) .* 
-                            (1 .- LinearAlgebra.I(K)) .* (F(t) * D(t)') * ones(K)
-end
-
-function my_ode3!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    dN[:] = - (η/(K-1)) .* (1.0 / sum(D(t))) .* (1 .- LinearAlgebra.I(K)) * D(t)
-end
-
-function my_ode4!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    dN[:] = ones(K) .* -η ./ K
-end
-
-function my_ode5!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    dN[:] = - dF(t) ./ sum(dF(t))
-end
-
-function my_ode6!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    dN[:] = - (η/(K-1)) .* sum((1 .- I(K)) .* ((dF(t) ./ (D(t) .* sum(dF(t)))) * D(t)'), dims = 2) 
-end
-
-function my_ode7!(dN, N, p, t)
-    F, D, K, dF, η = p
-
-    trprob = (dF(t) * F(t)') ./ sum(dF(t) * F(t)', dims = 1)
-
-    dN[:] = - (η/(K-1)) .* sum((1 .- I(K)) .* trprob, dims = 2)
-end
-
-ForwardDiff.derivative(Fs[1], 12)
-ForwardDiff.derivative(Fs[1], 12) ./ sum(ForwardDiff.derivative(Fs[1], 12))
-
-my_odes = [
-    my_ode1!,
-    my_ode2!,
-    my_ode3!,
-    my_ode4!,
-    my_ode5!,
-    my_ode6!,
-    my_ode7!
-]
-
-S = zeros(14, length(my_odes))
-for (i, my_ode) in enumerate(my_odes)
-    my_ode = my_odes[i]
-
-    for edge_idx in 1:14
-        a = Fs[edge_idx].t[1]
-        b = Fs[edge_idx].t[end]
-
-        tspan = (a, b)
-        derivF(t) = ForwardDiff.derivative(Fs[edge_idx], t)
-
-
-        p = [Fs[edge_idx], Ds[edge_idx], K, derivF, η]
-        N0 = zeros(K)
-        prob = ODEProblem(my_ode, N0, tspan, p)
-
-        sol = solve(prob)
-        S[edge_idx, i] = sum(sol[end])
-    end
-end
-
-ps5 = []
-for i in 1:length(my_odes)
-    p = plot(S[:,i], scm[end,:], linetype = :scatter, xlab = "ODE", ylab = "SCM", label = "#state changes")
-    plot!(p, [0.0, 2.2], [0.0, 2.2], linestyle = :dash, label = "One-to-one")
-    append!(ps5, [p])
-end
-plot(ps5...)
-
-S[:,7] ./ Nscm
-
-hcat(S, η .* data.branch_lengths)
-
-
-## posterior transition probability
-
-function dN10(dP, P, p, t)
-    F, D, K, dF, dG, η = p
-
-    denom = sum(dG(t))
-
-    dP[:] = -(η/(K-1)) .* sum((1 .* I(K)) .* (dG(t) * ones(K)') ./ denom, dims = 2)
-end
-
-edge_idx = 1
-a = Fs[edge_idx].t[1]
-b = Fs[edge_idx].t[end]
-
-tspan = (a, b)
-derivF(t) = ForwardDiff.derivative(Fs[edge_idx], t)
-trprob(t) = (derivF(t) * D(t)') ./ sum(derivF(t) * D(t)')
-G(t) = Fs[edge_idx](t) ./ sum(Fs[edge_idx])
-Gderiv(t) = ForwardDiff.derivative(G, t)
-
-p = [Fs[edge_idx], Ds[edge_idx], K, derivF, Gderiv, η]
-N0 = zeros(K)
-prob = ODEProblem(dN10, N0, tspan, p)
-sol = solve(prob)
-
-plot(sol)
-
-sol[end] |> sum
-
-Nscm[1]
-
-P = derivF(a) * Ds[1](a)'
-P = P ./ sum(P, dims = 1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## revbayes to ape indices
 R"""
@@ -217,6 +58,65 @@ for edge_idx in 1:14
         Nscm[edge_idx] = mean(df[!,"num_shifts["*string(Rev_index)* "]"])
     end
 end
+
+nshifts = compute_nshifts(model, data, Ds, Ss; ntimes = 100, ape_order = false)
+
+sum(nshifts)
+scatter(nshifts, Nscm, xlab = "nshifts analytical", ylab = "SCM")
+plot!([0.0,2.0], [0.0, 2.0], label = "one-to-one")
+sum(Nscm)
+
+sum(η .* data.branch_lengths)
+plot(nshifts, η .* data.branch_lengths, linetype = :scatter)
+
+
+t = 20.0
+Δt = -0.01
+edge_idx = 1
+K = 4
+
+A = Diversification.Amatrix(model, E, K, t)
+
+## from three to two
+ei = [0.0, 0.0, 1.0, 0.0]
+(ei .- Δt .* A * ei)[2] * Ds[edge_idx](t)[2]
+
+(LinearAlgebra.I(K) .- Δt .* A) .* (Ds[edge_idx](t) * ones(K)')
+
+Ds[edge_idx](t) * ones(K)'
+
+P = Diversification.Pmatrix(model, Ds[1], E, t, Δt)
+
+#sum(P[4,:])
+
+Q = [
+    -0.3 0.3
+    0.5 -0.5
+]
+
+exp(0.1 .* Q)
+
+
+M = [
+    1.0 2.0
+    3.0 4.0
+]
+
+M * [1.0, 1.0]
+
+
+
+P_unnorm = ((LinearAlgebra.I(K) .- Δt .* A) .* (ones(K) * Ds[edge_idx](t)'))
+
+
+
+#P = Diversification.Pmatrix(model, Ds[1], E, t, Δt)
+
+
+
+
+
+
 
 S = data.branch_lengths .* η
 
