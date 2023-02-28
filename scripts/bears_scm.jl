@@ -59,60 +59,169 @@ for edge_idx in 1:14
     end
 end
 
-nshifts = compute_nshifts(model, data, Ds, Ss; ntimes = 100, ape_order = false)
+nshifts = compute_nshifts(model, data, Ds, Fs, Ss; ntimes = 5000, ape_order = false)
 
 sum(nshifts)
 scatter(nshifts, Nscm, xlab = "nshifts analytical", ylab = "SCM")
-plot!([0.0,2.0], [0.0, 2.0], label = "one-to-one")
+ymax = maximum(nshifts)
+plot!([0.0,ymax], [0.0, ymax], label = "one-to-one")
 sum(Nscm)
+sum((nshifts .- Nscm) .^ 2)
 
 sum(η .* data.branch_lengths)
 plot(nshifts, η .* data.branch_lengths, linetype = :scatter)
 
+
+## 
+ntimes = [10, 10, 25, 50, 75, 100, 150, 200, 250, 500, 1000, 2500, 5000]
+
+nshiftsx = zeros(length(ntimes))
+@showprogress for (i, nt) in enumerate(ntimes)
+    nshiftsx[i] = sum(compute_nshifts(model, data, Ds, Ss; ntimes = nt))
+end
+
+p = plot(ntimes, nshiftsx, seriestype = [:scatter],
+     color = "black", xlab = "Number of time slices\n(per branch)",
+     ylab = "Sum of E[N] across all branches", label = "Analytical solution\n(difference equation)", grid = false)
+plot!(p, ntimes, nshiftsx, seriestype = :line, color = "black", label = "")
+plot!(p, [ntimes[1], ntimes[end]], [sum(Nscm), sum(Nscm)], color = "orange", 
+        label = "Stochastic character map\n(2000 iters)")
+
+
+
+eigvals(-0.1 .* A)
+
+
+I(4) - Δt .* A
+
+exp(- Δt .* A) ./ (sum(exp(- Δt .* A), dims = 2) * ones(4)')
+
+
+M = (I(4) - Δt .* A) .* (Ds[1](28.5) * ones(4)')
+M ./ (sum(M, dims = 2) * ones(4)')
+
+
+## U * diagm(s) * inv(U) = -Δt * A
+U,s,Vt = svd(-0.1 .* A)
+
+
+1 ./ s
+
+U * exp(diagm(s)) * inv(U)
+exp(-0.1 * A)
+
+P,D,Pt = svd(-A)
+
+
+(Ds[1](28.5) * ones(4)') .* (P * exp(diagm(0.1 .* D)) * inv(P))
+
+(Ds[1](28.5) * ones(4)' .* P) * exp(diagm(0.1 .* D)) * inv(P)
+
+exp(diagm(0.1 .* D))
+
+exp.(0.1 .* D)
+
+exp(0.1) .* exp.(D)
+
+exp(0.1 .* diagm(D))
+
+inv((Ds[1](28.5) * ones(4)') .* P)
+
+
+(Ds[1](28.5) * ones(4)') .* (P * exp(0.1 .* diagm(D)) * inv(P))
+
+((Ds[1](28.5) * ones(4)') .* P) * exp(0.1 .* diagm(D)) * inv(P)
+
+((Ds[1](28.5) * ones(4)') .* P) * exp(0.1 .* diagm(D)) * inv(P)
+
+
+log((Ds[1](28.5) * ones(4)') .* P) * exp(0.1 .* diagm(D)) * inv(P)
+
+((Ds[1](28.5) * ones(4)') .* P) .* log(exp(0.1 .* diagm(D))) * inv(P)
+
+det(-A) * 4 * 0.1
+
+nshifts[1] / 79
+
+
+
+det(A)
 
 t = 20.0
 Δt = -0.01
 edge_idx = 1
 K = 4
 
+
+
+P = Diversification.Pmatrix(model, Ds[edge_idx], E, t, Δt)
 A = Diversification.Amatrix(model, E, K, t)
 
-## from three to two
-ei = [0.0, 0.0, 1.0, 0.0]
-(ei .- Δt .* A * ei)[2] * Ds[edge_idx](t)[2]
+## Try a differential equation
+# dP/dt = -A(t) .* (D(t) * ones(K))
 
-(LinearAlgebra.I(K) .- Δt .* A) .* (Ds[edge_idx](t) * ones(K)')
+function my_odes(dX, X, p, t)
+    λ, μ, η, E, D, K = p
 
-Ds[edge_idx](t) * ones(K)'
+    Q = -LinearAlgebra.I(K) .* η .+ (1 .- LinearAlgebra.I(K)) .* (η/(K-1))
+    A = LinearAlgebra.diagm(- (λ .+ μ .- 2 .* λ .* E(t))) .+ Q
+
+    dX[2:end,:] = -A .* (D(t) * ones(K)')
+    dX[1,1] = ones(K)' * ((1 .- I(K)) .* X[2:end,:] ./ ((X[2:end,:] * ones(K)) * ones(K)')) * ones(K)
+end
+
+using DifferentialEquations
+K = 4
+X0 = zeros(K+1, K)
+X0[2:end, :] .= I(K)
+X0[1,1] = 0.0
+
+edge_idx = 1
+a = Fs[edge_idx].t[1]
+b = Fs[edge_idx].t[end]
+tspan = (a, b)
+p = [model.λ, model.μ, model.η, E, Ds[edge_idx], K];
+prob = OrdinaryDiffEq.ODEProblem(my_odes, X0, tspan, p)
+
+plot(sol)
+
+sol = solve(prob);
+
+sol[1,:]
+
+nshifts[1]
+
+
+
+
+
+Δt = -0.001
+
+Q = -LinearAlgebra.I(K) .* η .+ (1 .- LinearAlgebra.I(K)) .* (η/(K-1))
+A = LinearAlgebra.diagm(- (λ .+ μ .- 2 .* λ .* E(t))) .+ Q
+
+AD = A .* (Ds[1](t) * ones(K)')
+
+sum(A[1,:])
+for i in 1:4
+    for j in 1:4
+        if i != j
+            AD[i,j] = -AD[i,i] / (K-1)
+        end
+    end
+end
+
+#nom = exp(-Δt .* A) .* (Ds[1](t) * ones(K)')
+#nom = (I(K) .- Δt .* A ) .* (Ds[1](t) * ones(K)')
+#denom = (nom * ones(K)) * ones(K)'
+
+nom = exp(-Δt .* AD)
+I(K) .- Δt .* AD
+#denom = (exp(-Δt .* AD) * ones(K)) *ones(K)'
+
+nom ./ denom
 
 P = Diversification.Pmatrix(model, Ds[1], E, t, Δt)
-
-#sum(P[4,:])
-
-Q = [
-    -0.3 0.3
-    0.5 -0.5
-]
-
-exp(0.1 .* Q)
-
-
-M = [
-    1.0 2.0
-    3.0 4.0
-]
-
-M * [1.0, 1.0]
-
-
-
-P_unnorm = ((LinearAlgebra.I(K) .- Δt .* A) .* (ones(K) * Ds[edge_idx](t)'))
-
-
-
-#P = Diversification.Pmatrix(model, Ds[1], E, t, Δt)
-
-
 
 
 

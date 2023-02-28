@@ -62,12 +62,12 @@ for edge_idx in 1:nbranches
     end
 end
 
-ntimes = [10, 10, 25, 50, 75, 100, 150, 200, 250]
+ntimes = [10, 10, 25, 50, 75, 100, 150, 200, 250, 500, 1000, 2500]
 
-ntimes = Int64.(round.(collect(range(5, 100; length = 10))))
+ntimes = Int64.(round.(collect(range(5, 2500; length = 10))))
 
 nshiftsx = zeros(length(ntimes))
-for (i, nt) in enumerate(ntimes)
+@showprogress for (i, nt) in enumerate(ntimes)
     nshiftsx[i] = sum(compute_nshifts(model, data, Ds, Ss; ntimes = nt))
 end
 
@@ -79,7 +79,9 @@ plot!(p, [ntimes[1], ntimes[end]], [sum(Nscm), sum(Nscm)], color = "orange",
         label = "Stochastic character map\n(2000 iters)")
 
 
-nshifts = compute_nshifts(model, data, Ds, Ss; ntimes = 80, ape_order = false)
+
+
+nshifts = compute_nshifts(model, data, Ds, Ss; ntimes = 1000, ape_order = false)
 histogram(nshifts, bins = 15)
 std_err_mean = sqrt.(Nscm ./ size(df)[1])
 shiftplot = plot(nshifts, Nscm, yerror = std_err_mean,linetype = :scatter, xlab = "Analytical solution", ylab = "RevBayes SCM", lab = "Number of shifts")
@@ -87,41 +89,15 @@ ymax = maximum([maximum(Nscm), maximum(nshifts)])
 plot!(shiftplot, [0.0, ymax], [0.0, ymax], lab = "One-to-one", linestyle = :dash)
 savefig(shiftplot, "figures/scm_vs_nshift.pdf")
 
-## 
-edge_idx = 1
-t = 28.5
-Δt = -0.01
-
-P = Diversification.Pmatrix(model, Ds[edge_idx], E, t, Δt)
-state_prob = Ss[edge_idx](t)
-
-P0 = (1 .- LinearAlgebra.I(K)) .* P
-## this one is good
-#nshift += abs((P0' * state_prob)[1] - (P0' * state_prob)[2])
-
-W = state_prob * ones(K)'
-#W = ones(K) * state_prob'
-
-P1 = P0 .* W
-
-L = LinearAlgebra.LowerTriangular(P1)
-U = LinearAlgebra.UpperTriangular(P1)
-
-abs.(L .- U')
-
-
-
-
+##
 
 plot(nshifts, data.branch_lengths .* η, linetype = :scatter, xlab = "nshifts", ylab="bl * η")
 plot!([0.0, 0.2], [0.0, 0.3])
 plot!([nshifts[104]],[ data.branch_lengths[104]], color = "red", lab = "", linetype = :scatter)
 annotate!(nshifts, data.branch_lengths, 1:nbranches)
 
-
 ## reorder to ape indices
 node_nshifts = compute_nshifts(model, data, Ds, Ss; ntimes = 80)
-
 
 phy = Dict("edge" => data.edges,
       "tip.label" => data.tiplab,
