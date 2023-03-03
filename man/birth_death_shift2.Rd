@@ -4,16 +4,10 @@
 \alias{birth_death_shift2}
 \title{Title}
 \usage{
-birth_death_shift2(phy, lambda, mu, eta, nsteps = 100)
+birth_death_shift2(phy, lambda, mu, eta, rho, verbose = FALSE)
 }
 \arguments{
-\item{phy}{an object of class phylo}
-
-\item{lambda}{vector of speciation rates}
-
-\item{mu}{vector of extinction rates}
-
-\item{eta}{the (common) rate of change between state i and state j. A scalar}
+\item{verbose}{}
 }
 \value{
 
@@ -22,15 +16,27 @@ birth_death_shift2(phy, lambda, mu, eta, nsteps = 100)
 Title
 }
 \examples{
-library(BDS)
+library(Pesto)
 library(ape)
+library(ggtree)
+library(tidytree)
+library(ggplot2)
+library(dplyr)
 
-data(bears)
+data(primates)
 
-lambda <- c(0.1, 0.2)
-mu <- c(0.05, 0.15)
+lambda <- c(0.1, 0.2, 0.3, 0.4, 0.20)
+mu <- c(0.05, 0.15, 0.05, 0.15, 0.25)
+rho <- 0.67
+eta <- 0.008
 
-eta <- 0.05
+td <- birth_death_shift2(primates, lambda, mu, eta, rho)
 
-res <- birth_death_shift2(bears, lambda, mu, eta)
+th <- max(ape::node.depth.edgelength(primates))
+p1 <- ggtree::ggtree(td, ggplot2::aes(color = `Speciation rate`)) +
+             ggtree::geom_tiplab(size = 3) +
+             ggplot2::theme(legend.position = c(0.15, 0.8)) +
+             ggplot2::xlim(c(0.0, th + 10))
+
+plot(p1)
 }

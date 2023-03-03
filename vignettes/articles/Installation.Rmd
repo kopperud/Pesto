@@ -1,0 +1,25 @@
+---
+title: "Installation"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+Set the global options to find your julia binary installation
+```{r setup, eval = FALSE}
+options("JULIA_HOME" = "/home/bkopper/julia-1.8.2/bin")
+```
+Load JuliaCall and set it up:
+```{r setup2, eval = FALSE}
+library(JuliaCall)
+julia_setup()
+```
+Install the julia module `Diversification.jl`:
+```{r install, eval = FALSE}
+julia_install_package("https://github.com/kopperud/Diversification")
+```
+
+

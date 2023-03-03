@@ -1,109 +1,67 @@
 #' Title
 #'
-#' @param phy an object of class phylo
-#' @param lambda vector of speciation rates
-#' @param mu vector of extinction rates
-#' @param eta the (common) rate of change between state i and state j. A scalar
-#' @param ntimes number of solutions provided by the ODE solver for each branch
+#' @param phy
+#' @param lambda
+#' @param mu
+#' @param eta
+#' @param rho
+#' @param verbose
 #'
 #' @return
-#' @export
-#'
-#' @examples
-#'
-#' library(BDS)
-#'
-#' data(bears)
-#'
-#' lambda <- c(0.1, 0.2)
-#' mu <- c(0.05, 0.15)
-#'
-#' eta <- 0.05
-#'
-#' res <- birth_death_shift(bears, lambda, mu, eta)
-birth_death_shift <- function(phy, lambda, mu, eta, ntimes = 100){
-  k <- length(lambda)
-
-  stopifnot(length(mu) == length(lambda))
-
-  D_inits <- matrix(1, nrow = nrow(phy$edge), ncol = k)
-
-  x <- traversal(phy, D_inits, lambda, mu, eta, ntimes = ntimes)
-
-  n_edges <- nrow(phy$edge)
-
-  mean_mu <- list()
-  mean_lambda <- list()
-  for (i in 1:n_edges){
-    Em <- dplyr::select(x$forward[[i]], starts_with("E")) %>% as.matrix()
-    Dm <- dplyr::select(x$forward[[i]], starts_with("D")) %>% as.matrix()
-    Fm <- dplyr::select(x$forward[[i]], starts_with("F")) %>% as.matrix()
-
-    Pm = (Fm * Dm) / (rowSums(Fm * Dm))
-
-    mean_mu[[i]] <- sum(rowSums(sapply(1:k, function(i) Pm[,i] * mu[i]))) / ntimes
-    mean_lambda[[i]] <- sum(rowSums(sapply(1:k, function(i) Pm[,i] * lambda[i]))) / ntimes
-  }
-
-  mean_rates <- list(
-    "mu" = unlist(mean_mu),
-    "lambda" = unlist(mean_lambda)
-  )
-
-  res <- list(
-    "mean_rates" = mean_rates,
-    "x" = x
-  )
-
-  return(res)
-}
-
-#' @inherit birth_death_shift
 #'
 #' @export
 #' @examples
-#' library(BDS)
+#' library(Pesto)
 #' library(ape)
+#' library(ggtree)
+#' library(tidytree)
+#' library(ggplot2)
+#' library(dplyr)
 #'
-#' data(bears)
+#' data(primates)
 #'
-#' lambda <- c(0.1, 0.2)
-#' mu <- c(0.05, 0.15)
+#' lambda <- c(0.1, 0.2, 0.3, 0.4, 0.20)
+#' mu <- c(0.05, 0.15, 0.05, 0.15, 0.25)
+#' rho <- 0.67
+#' eta <- 0.008
 #'
-#' eta <- 0.05
+#' td <- birth_death_shift2(primates, lambda, mu, eta, rho)
 #'
-#' res <- birth_death_shift2(bears, lambda, mu, eta)
-birth_death_shift2 <- function(phy, lambda, mu, eta, nsteps = 100){
-  branch_lengths <- phy$edge.length
-  edge <- phy$edge
-  po <- ape::postorder(phy)
-  rootnode <- length(phy$tip.label)
+#' th <- max(ape::node.depth.edgelength(primates))
+#' p1 <- ggtree::ggtree(td, ggplot2::aes(color = `Speciation rate`)) +
+#'              ggtree::geom_tiplab(size = 3) +
+#'              ggplot2::theme(legend.position = c(0.15, 0.8)) +
+#'              ggplot2::xlim(c(0.0, th + 10))
+#'
+#' plot(p1)
+birth_death_shift2 <- function(phy, lambda, mu, eta, rho, verbose = FALSE){
+  phy <- treeprecompute(phy)
 
-  back <- rcpp_postorder(lambda, mu, eta, po, edge, branch_lengths, rootnode, nsteps)
+  JuliaCall::julia_library("Diversification")
 
-  E_ends <- back[["E_ends"]]
-  D_ends <- back[["D_ends"]]
-  D_ends_unnormalized <- back[["D_ends_unnormalized"]]
-  root_probs <- back[["root_probs"]]
+  JuliaCall::julia_assign("phy", phy)
+  JuliaCall::julia_assign("lambda", lambda)
+  JuliaCall::julia_assign("mu", mu)
+  JuliaCall::julia_assign("eta", eta)
+  JuliaCall::julia_assign("rho", rho)
+  JuliaCall::julia_assign("verbose", verbose)
 
-  forw <- rcpp_preorder(lambda, mu, eta, po,
-                        edge,
-                        branch_lengths,
-                        root_probs,
-                        E_ends,
-                        D_ends,
-                        D_ends_unnormalized,
-                        rootnode,
-                        nsteps )
+  JuliaCall::julia_eval("data = Diversification.make_SSEdata2(phy, rho)")
+  JuliaCall::julia_eval("model = Diversification.SSEconstant(lambda, mu, eta)")
 
-  F_ends <- forw[["F_ends"]]
+  res <- JuliaCall::julia_eval("birth_death_shift(model, data; verbose = verbose)")
 
-  res <- list(
-    "E_ends" = E_ends,
-    "D_ends" = D_ends,
-    "F_ends" = F_ends,
-    "root_probs" = root_probs
-  )
+  lambda_average <- res$lambda
+  mu_average <- res$mu
 
-  return(res)
+  th <- max(ape::node.depth.edgelength(phy))
+  df1 <- tibble::tibble("node" = 1:max(phy$edge),
+                "Speciation rate" = lambda_average,
+                "Extinction rate" = mu_average)
+  x <- tibble::as_tibble(phy)
+
+  df <- merge(x, df1, by = "node")
+  td <- tidytree::as.treedata(df)
+
+  return(td)
 }

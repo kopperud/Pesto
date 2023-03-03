@@ -9,3 +9,7 @@
 #' @docType package
 #' @name Pesto
 NULL
+
+pesto <- function(x){
+  return(x)
+}
