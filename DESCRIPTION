@@ -1,0 +1,12 @@
+Package: Pesto
+Title: Phylogenetic Estimation of Shifts in the Tempo of Origination
+Version: 0.0.1.9000
+Authors@R: c(person("Bj\u00F8rn Tore", "Kopperud", role =c("aut", "cre"), email = "kopperud@protonmail.com"),
+             person("Sebastian", "H\u00F6hna", role = c("aut")))
+Description: What the package does (one paragraph).
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.2
+LinkingTo: Rcpp
+Imports: Rcpp, dplyr, ape, ggtree, JuliaCall, tidytree, ggplot2
