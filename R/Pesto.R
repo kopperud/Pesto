@@ -1,13 +1,11 @@
-#' BDS: Birth death shift model
+#' Pesto: Phylogenetic Estimation of Shifts in the Tempo of Origination
 #'
 #' This package implements the birth-death shift model for diversification
 #' analysis based on reconstructed phylogenies.
 #'
-#' @section BDS functions:
+#' @section Pesto functions:
 #' Functions here...
 #'
 #' @docType package
-#' @name BDS
-#' @useDynLib BDS
-#' @importFrom Rcpp sourceCpp
+#' @name Pesto
 NULL
