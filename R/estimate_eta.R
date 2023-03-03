@@ -1,5 +1,4 @@
-
-#' Title
+#' Estimate the shift rate conditional on lambda and mu
 #'
 #' @param lambda a vector of speciation rates
 #' @param mu a vector of extinction rates
@@ -22,6 +21,7 @@
 #' rho <- 0.67
 #'
 #' etaml <- optimize_eta(lambda, mu, primates, rho)
+#' print(etaml)
 optimize_eta <- function(lambda, mu, phy, rho, lower = 0.00001, upper = 10.0, eta0 = NULL){
   phy <- treeprecompute(phy)
 

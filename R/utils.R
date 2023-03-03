@@ -1,12 +1,14 @@
-#' Title
+#' Precompute tree statistics
 #'
 #' @param phy
+#'
+#' @description Add some tree statistics to the tree object, compute the branch traversal order (postorder).
 #'
 #' @return
 #' @export
 #'
 #' @examples
-#' library(BDS)
+#' library(Pesto)
 #'
 #' data(bears)
 #'
@@ -33,8 +35,12 @@ treeprecompute <- function(phy){
 #' @export
 #'
 #' @examples
+#' Eight points from the discretized log-normal distribution
+#' with median = 0.2 and standard deviation H such that the
+#' 2.5-97.5% quantile spans one order of magnitude.
 #'
-#' q <- lognorm_quantiles(0.2, n = 8)
+#' H <- 0.587
+#' q <- lognorm_quantiles(log(0.2), sdlog = H, n = 8)
 lognorm_quantiles <- function(meanlog = log(0.2), sdlog = 0.587, n = 6){
   ns <- 1:n
   p <- ((ns-0.5)/n)
@@ -42,21 +48,20 @@ lognorm_quantiles <- function(meanlog = log(0.2), sdlog = 0.587, n = 6){
   return(q)
 }
 
-#' Title
+#' All pairwise combinations among x and y
 #'
 #' @param ys
 #' @param xs
 #'
-#' @return
+#' @return All the pairwise combinations
 #' @export
 #'
 #' @examples
-#'
 #' n <- 6
 #' H <- 0.578
 #'
-#' lambda_quantiles <- lognorm_quantiles(meanlog = log(hatlambda), sdlog = H, n = n)
-#' mu_quantiles <- lognorm_quantiles(meanlog = log(hatmu), sdlog = H, n = n)
+#' lambda_quantiles <- lognorm_quantiles(meanlog = log(0.28), sdlog = H, n = n)
+#' mu_quantiles <- lognorm_quantiles(meanlog = log(0.20), sdlog = H, n = n)
 #'
 #' allpairwise(lambda_quantiles, mu_quantiles)
 allpairwise <- function(xs, ys){
@@ -69,7 +74,6 @@ allpairwise <- function(xs, ys){
   mu <- numeric(k)
 
   i <- 1.0
-
   for (y in ys){
     for (x in xs){
       lambda[i] <- x

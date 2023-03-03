@@ -15,12 +15,14 @@ First we load the necessary packages.
 library(Pesto)
 library(ape)
 suppressPackageStartupMessages(library(ggtree))
+suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(tidytree))
 ```
 ```{r setupfake, eval=FALSE}
 library(Pesto)
 library(ape)
 library(ggtree)
+library(ggplot2)
 library(tidytree)
 ```
 Next we load our favorite tree, and plot it.
@@ -38,7 +40,13 @@ ggtree(primates) +
 
 Our model will use three hyperparameters: $\hat{\lambda}$, $\hat{\mu}$ and $\eta$. What are appropriate values for $\hat{\lambda}$ and $\hat{\mu}$? One approach is to use so-called empirical hyperpriors for the parameters. Meaning, we will estimate $\hat{\lambda}$ and $\hat{\mu}$ using a simpler model: the constant-rate reconstructed birth-death process with uniform taxon sampling. 
 
-```{r constantbdp}
+```{r constantbdp, include=FALSE}
+mlrates <- estimate_constant_bdp(primates, rho)
+
+hatlambda <- mlrates$lambda
+hatmu <- mlrates$mu
+```
+```{r constantbdpfake, eval=FALSE}
 mlrates <- estimate_constant_bdp(primates, rho)
 
 hatlambda <- mlrates$lambda
@@ -76,23 +84,39 @@ eta <- optimize_eta(lambda, mu, primates, rho)
 Now that we have our parameters $\vec{\lambda}$, $\vec{\mu}$ and $\eta$, we can compute the expected rates across the branches:
 
 ```{r expected-rates}
-td <- birth_death_shift2(primates, lambda, mu, eta, rho)
+td <- birth_death_shift(primates, lambda, mu, eta, rho)
 ```
 The return object is a `treedata` object, which includes the tree and metadata. We can plot the results like so:
 ```{r treeplotrates, out.width = "80%"}
-th <- max(ape::node.depth.edgelength(primates))
-p1 <- ggtree::ggtree(td, ggplot2::aes(color = `Speciation rate`)) +
-             ggtree::geom_tiplab(size = 2) +
-             ggplot2::theme(legend.position = c(0.15, 0.8)) +
-             ggplot2::xlim(c(0.0, th + 10))
+p1 <- ggtree(td, aes(color = `Speciation rate`)) +
+             geom_tiplab(size = 2) +
+             theme(legend.position = c(0.1, 0.8)) +
+             xlim(c(0.0, th + 10))
 plot(p1)
 ```
 
 ## Calculating the number of shifts
 
-```{r nshifts}
-x <- extinction_probability(primates, lambda, mu, rho)
+We can also calculate the expected number of shifts under the model.
 
-plot(x[[2]], x[[1]][1,])
+```{r nshifts, out.width = "80%"}
+td <- compute_nshifts(primates, lambda, mu, eta, rho)
+
+p2 <- ggtree(td, aes(color = nshifts)) +
+             geom_tiplab(size = 1) +
+             theme(legend.position = c(0.1, 0.8)) +
+             xlim(c(0.0, th + 10)) +
+             scale_colour_gradient(low = "black", high = "red")
+plot(p2)
 ```
 
+Under the prior, we would expect $\eta \sum b_i$ number of shifts across the phylogeny, where $b_i$ is the branch length of branch $i$:
+```{r priorN}
+Nprior = eta * sum(primates$edge.length)
+print(Nprior)
+```
+The posterior estimate of the number of state changes is highly correlated with the prior, but it is not exactly the same, it is slightly less: 
+```{r posteriorN}
+Nposterior = sum(td@data$nshifts)
+print(Nposterior)
+```

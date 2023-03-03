@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{treeprecompute}
 \alias{treeprecompute}
-\title{Title}
+\title{Precompute tree statistics}
 \usage{
 treeprecompute(phy)
 }
@@ -13,10 +13,10 @@ treeprecompute(phy)
 
 }
 \description{
-Title
+Add some tree statistics to the tree object, compute the branch traversal order (postorder).
 }
 \examples{
-library(BDS)
+library(Pesto)
 
 data(bears)
 

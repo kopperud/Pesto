@@ -2,7 +2,7 @@
 % Please edit documentation in R/estimate_eta.R
 \name{optimize_eta}
 \alias{optimize_eta}
-\title{Title}
+\title{Estimate the shift rate conditional on lambda and mu}
 \usage{
 optimize_eta(lambda, mu, phy, rho, lower = 1e-05, upper = 10, eta0 = NULL)
 }
@@ -34,4 +34,5 @@ mu <- c(0.05, 0.15, 0.05, 0.15)
 rho <- 0.67
 
 etaml <- optimize_eta(lambda, mu, primates, rho)
+print(etaml)
 }

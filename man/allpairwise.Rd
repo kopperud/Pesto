@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{allpairwise}
 \alias{allpairwise}
-\title{Title}
+\title{All pairwise combinations among x and y}
 \usage{
 allpairwise(xs, ys)
 }
@@ -10,18 +10,17 @@ allpairwise(xs, ys)
 \item{xs}{}
 }
 \value{
-
+All the pairwise combinations
 }
 \description{
-Title
+All pairwise combinations among x and y
 }
 \examples{
-
 n <- 6
 H <- 0.578
 
-lambda_quantiles <- lognorm_quantiles(meanlog = log(hatlambda), sdlog = H, n = n)
-mu_quantiles <- lognorm_quantiles(meanlog = log(hatmu), sdlog = H, n = n)
+lambda_quantiles <- lognorm_quantiles(meanlog = log(0.28), sdlog = H, n = n)
+mu_quantiles <- lognorm_quantiles(meanlog = log(0.20), sdlog = H, n = n)
 
 allpairwise(lambda_quantiles, mu_quantiles)
 }

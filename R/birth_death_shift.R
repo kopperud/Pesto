@@ -1,4 +1,4 @@
-#' Title
+#' Branch-specific speciation and extinction rate estimation
 #'
 #' @param phy
 #' @param lambda
@@ -25,16 +25,16 @@
 #' rho <- 0.67
 #' eta <- 0.008
 #'
-#' td <- birth_death_shift2(primates, lambda, mu, eta, rho)
+#' td <- birth_death_shift(primates, lambda, mu, eta, rho)
 #'
-#' th <- max(ape::node.depth.edgelength(primates))
-#' p1 <- ggtree::ggtree(td, ggplot2::aes(color = `Speciation rate`)) +
-#'              ggtree::geom_tiplab(size = 3) +
-#'              ggplot2::theme(legend.position = c(0.15, 0.8)) +
-#'              ggplot2::xlim(c(0.0, th + 10))
+#' th <- max(node.depth.edgelength(primates))
+#' p1 <- ggtree(td, aes(color = `Speciation rate`)) +
+#'              geom_tiplab(size = 3) +
+#'              theme(legend.position = c(0.15, 0.8)) +
+#'              xlim(c(0.0, th + 10))
 #'
 #' plot(p1)
-birth_death_shift2 <- function(phy, lambda, mu, eta, rho, verbose = FALSE){
+birth_death_shift <- function(phy, lambda, mu, eta, rho, verbose = FALSE){
   phy <- treeprecompute(phy)
 
   JuliaCall::julia_library("Diversification")

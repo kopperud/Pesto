@@ -8,18 +8,19 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
-Set the global options to find your julia binary installation
+Set the global options to find your julia binary installation (optional).
 ```{r setup, eval = FALSE}
 options("JULIA_HOME" = "/home/bkopper/julia-1.8.2/bin")
 ```
-Load JuliaCall and set it up:
+Install and load JuliaCall and set it up (necessary):
 ```{r setup2, eval = FALSE}
+install.packages("JuliaCall")
 library(JuliaCall)
 julia_setup()
 ```
-Install the julia module `Diversification.jl`:
+Install the julia module `Diversification.jl` (necessary):
 ```{r install, eval = FALSE}
-julia_install_package("https://github.com/kopperud/Diversification")
+julia_install_package("https://github.com/kopperud/Diversification.jl")
 ```
-
+The above chunk can be run again in case there are any updates.
 
