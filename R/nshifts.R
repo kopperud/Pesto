@@ -40,14 +40,14 @@ compute_nshifts <- function(phy, lambda, mu, eta, rho, ntimeslices = 500){
   JuliaCall::julia_assign("rho", rho)
   JuliaCall::julia_assign("ntimeslices", ntimeslices)
 
-  JuliaCall::julia_library("Diversification")
+  JuliaCall::julia_library("Pesto")
 
-  JuliaCall::julia_eval("data = Diversification.make_SSEdata2(phy, rho)")
-  JuliaCall::julia_eval("model = Diversification.SSEconstant(lambda, mu, eta)")
+  JuliaCall::julia_eval("data = Pesto.make_SSEdata2(phy, rho)")
+  JuliaCall::julia_eval("model = Pesto.SSEconstant(lambda, mu, eta)")
 
   JuliaCall::julia_eval("E = extinction_probability(model, data)", need_return="Julia")
-  JuliaCall::julia_eval("Ds, Fs = Diversification.backwards_forwards_pass(model, data)", need_return="Julia")
-  JuliaCall::julia_eval("Ss = Diversification.ancestral_state_probabilities(data, model, Ds, Fs)", need_return="Julia")
+  JuliaCall::julia_eval("Ds, Fs = Pesto.backwards_forwards_pass(model, data)", need_return="Julia")
+  JuliaCall::julia_eval("Ss = Pesto.ancestral_state_probabilities(data, model, Ds, Fs)", need_return="Julia")
 
   nshifts <- JuliaCall::julia_eval("nshifts = compute_nshifts(model, data, Ds, Ss; ntimeslices = ntimeslices)")
 

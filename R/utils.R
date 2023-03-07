@@ -35,9 +35,9 @@ treeprecompute <- function(phy){
 #' @export
 #'
 #' @examples
-#' Eight points from the discretized log-normal distribution
-#' with median = 0.2 and standard deviation H such that the
-#' 2.5-97.5% quantile spans one order of magnitude.
+#' # Eight points from the discretized log-normal distribution
+#' # with median = 0.2 and standard deviation H such that the
+#' # 2.5-97.5% quantile spans one order of magnitude.
 #'
 #' H <- 0.587
 #' q <- lognorm_quantiles(log(0.2), sdlog = H, n = 8)

@@ -17,7 +17,7 @@ extinction_probability <- function(phy, lambda, mu, rho){
   JuliaCall::julia_assign("mu", mu)
   JuliaCall::julia_assign("rho", rho)
 
-  JuliaCall::julia_eval("data = Diversification.make_SSEdata2(phy, rho);")
+  JuliaCall::julia_eval("data = Pesto.make_SSEdata2(phy, rho);")
   JuliaCall::julia_eval("E = extinction_probability(model, data);", need_return = "Julia")
 
   u <- JuliaCall::julia_eval("hcat(E.u...)")

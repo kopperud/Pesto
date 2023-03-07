@@ -18,9 +18,9 @@ install.packages("JuliaCall")
 library(JuliaCall)
 julia_setup()
 ```
-Install the julia module `Diversification.jl` (necessary):
+Install the julia module `Pesto.jl` (necessary):
 ```{r install, eval = FALSE}
-julia_install_package("https://github.com/kopperud/Diversification.jl")
+julia_install_package("https://github.com/kopperud/Pesto.jl")
 ```
 The above chunk can be run again in case there are any updates.
 

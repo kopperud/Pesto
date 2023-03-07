@@ -37,7 +37,7 @@
 birth_death_shift <- function(phy, lambda, mu, eta, rho, verbose = FALSE){
   phy <- treeprecompute(phy)
 
-  JuliaCall::julia_library("Diversification")
+  JuliaCall::julia_library("Pesto")
 
   JuliaCall::julia_assign("phy", phy)
   JuliaCall::julia_assign("lambda", lambda)
@@ -46,8 +46,8 @@ birth_death_shift <- function(phy, lambda, mu, eta, rho, verbose = FALSE){
   JuliaCall::julia_assign("rho", rho)
   JuliaCall::julia_assign("verbose", verbose)
 
-  JuliaCall::julia_eval("data = Diversification.make_SSEdata2(phy, rho)")
-  JuliaCall::julia_eval("model = Diversification.SSEconstant(lambda, mu, eta)")
+  JuliaCall::julia_eval("data = Pesto.make_SSEdata2(phy, rho)")
+  JuliaCall::julia_eval("model = Pesto.SSEconstant(lambda, mu, eta)")
 
   res <- JuliaCall::julia_eval("birth_death_shift(model, data; verbose = verbose)")
 

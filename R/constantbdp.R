@@ -16,13 +16,13 @@
 estimate_constant_bdp <- function(phy, rho = 1){
   phy <- treeprecompute(phy)
 
-  JuliaCall::julia_library("Diversification")
+  JuliaCall::julia_library("Pesto")
 
   JuliaCall::julia_assign("phy", phy)
   JuliaCall::julia_assign("rho", rho)
 
 
-  JuliaCall::julia_eval("data = Diversification.make_SSEdata2(phy, rho)")
+  JuliaCall::julia_eval("data = Pesto.make_SSEdata2(phy, rho)")
 
   mlres <- JuliaCall::julia_eval("estimate_constant_bdp(data)")
 

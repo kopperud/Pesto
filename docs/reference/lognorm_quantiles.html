@@ -75,7 +75,13 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Eight points from the discretized log-normal distribution</span></span></span>
+<span class="r-in"><span><span class="co"># with median = 0.2 and standard deviation H such that the</span></span></span>
+<span class="r-in"><span><span class="co"># 2.5-97.5% quantile spans one order of magnitude.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">H</span> <span class="op">&lt;-</span> <span class="fl">0.587</span></span></span>
+<span class="r-in"><span><span class="va">q</span> <span class="op">&lt;-</span> <span class="fu">lognorm_quantiles</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">0.2</span><span class="op">)</span>, sdlog <span class="op">=</span> <span class="va">H</span>, n <span class="op">=</span> <span class="fl">8</span><span class="op">)</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>

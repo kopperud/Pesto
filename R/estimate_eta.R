@@ -31,7 +31,7 @@ optimize_eta <- function(lambda, mu, phy, rho, lower = 0.00001, upper = 10.0, et
     eta0 <- 1 / treelength
   }
 
-  JuliaCall::julia_library("Diversification")
+  JuliaCall::julia_library("Pesto")
 
   JuliaCall::julia_assign("phy", phy)
   JuliaCall::julia_assign("lambda", lambda)
@@ -41,7 +41,7 @@ optimize_eta <- function(lambda, mu, phy, rho, lower = 0.00001, upper = 10.0, et
   JuliaCall::julia_assign("upper", upper)
   JuliaCall::julia_assign("eta0", eta0)
 
-  JuliaCall::julia_eval("data = Diversification.make_SSEdata2(phy, rho)")
+  JuliaCall::julia_eval("data = Pesto.make_SSEdata2(phy, rho)")
 
   eta <- JuliaCall::julia_eval("optimize_eta(lambda, mu, data; lower = lower, upper = upper, xinit = eta0)")
   return(eta)
